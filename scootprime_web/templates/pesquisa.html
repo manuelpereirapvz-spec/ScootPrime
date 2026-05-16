@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Pesquisa - ScootPrime{% endblock %}
+{% block content %}
+<section class="hero compact-hero">
+    <div>
+        <p class="eyebrow">Pesquisa global</p>
+        <h1>Encontrar informação</h1>
+    </div>
+</section>
+
+<section class="panel">
+    <form class="search-row wide" method="get" data-autosubmit>
+        <input name="q" value="{{ termo }}" placeholder="Cliente, contacto, morada, produto ou localização" autofocus>
+        <button class="button primary" type="submit">Pesquisar</button>
+        {% if termo %}
+            <a class="button ghost" href="{{ url_for('web.pesquisa') }}">Limpar</a>
+        {% endif %}
+    </form>
+</section>
+
+<section class="grid search-grid">
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Clientes</p>
+                <h2>Resultados</h2>
+            </div>
+        </div>
+        <div class="stack-list roomy">
+            {% for cliente in clientes %}
+                <a class="stack-item result-block" href="{{ url_for('web.editar_cliente', client_id=cliente.id) }}">
+                    <span>
+                        <strong>{{ cliente.nome }}</strong>
+                        <small>#{{ cliente.id }} - {{ cliente.contacto or "Sem contacto" }}</small>
+                        <em>{{ cliente.morada or "Sem morada registada" }}</em>
+                    </span>
+                    <div class="mini-history">
+                        {% for item in historico[cliente.id].ocorrencias[:2] %}
+                            <small>Ocorrência: {{ item.data }} - {{ item.descricao[:70] }}</small>
+                        {% endfor %}
+                        {% for item in historico[cliente.id].orcamentos[:2] %}
+                            <small>Orçamento: {{ item.data }} - {{ "%.2f"|format(item.total) }} EUR</small>
+                        {% endfor %}
+                    </div>
+                </a>
+            {% else %}
+                <p class="empty compact">{{ "Sem clientes encontrados." if termo else "Escreva para pesquisar." }}</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Stock</p>
+                <h2>Materiais</h2>
+            </div>
+        </div>
+        <div class="stack-list roomy">
+            {% for item in materiais %}
+                <a class="stack-item" href="{{ url_for('web.stock', q=item.nome) }}">
+                    <span>
+                        <strong>{{ item.nome }}</strong>
+                        <small>{{ item.categoria or "Sem categoria" }} - {{ item.localizacao or "Sem localização" }}</small>
+                    </span>
+                    <b class="{{ 'status danger' if item.stock_minimo > 0 and item.quantidade <= item.stock_minimo else 'status ok' }}">{{ item.quantidade }}</b>
+                </a>
+            {% else %}
+                <p class="empty compact">{{ "Sem materiais encontrados." if termo else "A pesquisa tambem encontra materiais." }}</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+{% endblock %}

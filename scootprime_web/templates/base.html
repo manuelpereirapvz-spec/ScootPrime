@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}ScootPrime Web{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}?v=20260516-mobile">
+</head>
+<body>
+    {% set endpoint = request.endpoint or '' %}
+    <div class="app-frame">
+        <aside class="sidebar">
+            <a class="brand" href="{{ url_for('web.dashboard') }}">
+                {% if brand_logo_url %}
+                    <img class="brand-logo" src="{{ brand_logo_url }}" alt="ScootPrime">
+                {% else %}
+                    <span class="brand-mark">SP</span>
+                {% endif %}
+                <span>
+                    <strong>ScootPrime</strong>
+                    <small>Oficina inteligente</small>
+                </span>
+            </a>
+
+            <nav class="nav-list" aria-label="Menu principal">
+                <a class="{{ 'active' if endpoint == 'web.dashboard' else '' }}" href="{{ url_for('web.dashboard') }}" data-short="Painel">Painel</a>
+                <a class="{{ 'active' if endpoint == 'web.clientes' else '' }}" href="{{ url_for('web.clientes') }}" data-short="Clientes">Clientes</a>
+                <a class="{{ 'active' if endpoint == 'web.orcamentos' else '' }}" href="{{ url_for('web.orcamentos') }}" data-short="Docs">Orçamentos</a>
+                <a class="{{ 'active' if endpoint == 'web.stock' else '' }}" href="{{ url_for('web.stock') }}" data-short="Stock">Stock{% if stock_low_count %}<span>{{ stock_low_count }}</span>{% endif %}</a>
+                <a class="{{ 'active' if endpoint == 'web.manutencao' else '' }}" href="{{ url_for('web.manutencao') }}" data-short="Mais">Manutenção</a>
+            </nav>
+
+            <div class="sidebar-card">
+                <small>Estado</small>
+                {% if stock_low_count %}
+                    <strong>{{ stock_low_count }} artigos em alerta</strong>
+                    <a href="{{ url_for('web.stock', low=1) }}">Ver stock baixo</a>
+                {% else %}
+                    <strong>Stock controlado</strong>
+                    <a href="{{ url_for('web.stock') }}">Abrir stock</a>
+                {% endif %}
+            </div>
+        </aside>
+
+        <div class="workspace">
+            <header class="topbar">
+                <form class="global-search" action="{{ url_for('web.pesquisa') }}" method="get">
+                    <input name="q" value="{{ request.args.get('q', '') }}" placeholder="Pesquisar clientes, contactos ou material" data-global-search>
+                    <button type="submit">Pesquisar</button>
+                </form>
+                <div class="quick-actions">
+                    {% if current_user %}
+                        <span class="user-chip">{{ current_user.username }}</span>
+                    {% endif %}
+                    <a class="button subtle" href="{{ url_for('web.stock') }}#add-product">Adicionar stock</a>
+                    <a class="button primary" href="{{ url_for('web.orcamentos') }}">Novo orçamento</a>
+                    <a class="button subtle" href="{{ url_for('web.logout') }}">Sair</a>
+                </div>
+            </header>
+
+            <main class="content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <section class="messages" aria-live="polite">
+                            {% for category, message in messages %}
+                                <div class="message {{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </section>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

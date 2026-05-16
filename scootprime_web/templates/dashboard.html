@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Painel - ScootPrime{% endblock %}
+{% block content %}
+<section class="hero">
+    <div>
+        <p class="eyebrow">Painel de controlo</p>
+        <h1>Visao rapida da oficina</h1>
+    </div>
+    <div class="hero-actions">
+        <a class="button primary" href="{{ url_for('web.clientes') }}">Novo cliente</a>
+        <a class="button" href="{{ url_for('web.stock') }}#add-product">Adicionar produto</a>
+    </div>
+</section>
+
+<section class="metric-grid">
+    <article class="metric-card">
+        <span>Clientes</span>
+        <strong>{{ data.summary["clientes"] }}</strong>
+    </article>
+    <article class="metric-card">
+        <span>Ocorrencias</span>
+        <strong>{{ data.summary["ocorrencias"] }}</strong>
+    </article>
+    <article class="metric-card">
+        <span>Orcamentado</span>
+        <strong>{{ "%.2f"|format(data.summary["total_orcamentado"]) }} EUR</strong>
+        <small>Soma dos orcamentos emitidos</small>
+    </article>
+    <article class="metric-card alert-card">
+        <span>Stock baixo</span>
+        <strong>{{ data.summary["stock_baixo"] }}</strong>
+        <small>Artigos a repor</small>
+    </article>
+</section>
+
+<section class="grid dashboard-grid">
+    <article class="panel attention-panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Atencao</p>
+                <h2>Reposicao de stock</h2>
+            </div>
+            <a class="button small" href="{{ url_for('web.stock', low=1) }}">Ver tudo</a>
+        </div>
+        <div class="stack-list">
+            {% for item in data.stock_baixo %}
+                <a class="stack-item" href="{{ url_for('web.stock', q=item.nome) }}">
+                    <span>
+                        <strong>{{ item.nome }}</strong>
+                        <small>{{ item.categoria or "Sem categoria" }} - minimo {{ item.stock_minimo }}</small>
+                    </span>
+                    <b>{{ item.quantidade }}</b>
+                </a>
+            {% else %}
+                <p class="empty compact">Sem alertas de stock neste momento.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Financeiro</p>
+                <h2>Valores</h2>
+            </div>
+        </div>
+        <div class="finance-strip">
+            <div>
+                <span>Pago</span>
+                <strong>{{ "%.2f"|format(data.summary["total_pago"]) }} EUR</strong>
+            </div>
+            <div>
+                <span>Em aberto</span>
+                <strong>{{ "%.2f"|format(data.summary["total_em_aberto"]) }} EUR</strong>
+            </div>
+        </div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Ultimo movimento</p>
+                <h2>Ocorrencias recentes</h2>
+            </div>
+        </div>
+        <div class="stack-list">
+            {% for item in data.recentes_ocorrencias %}
+                <div class="stack-item">
+                    <span>
+                        <strong>{{ item.cliente_nome or "Cliente removido" }}</strong>
+                        <small>{{ item.data }} - {{ item.descricao[:80] }}</small>
+                    </span>
+                </div>
+            {% else %}
+                <p class="empty compact">Ainda nao existem ocorrencias.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Documentos</p>
+                <h2>Orcamentos recentes</h2>
+            </div>
+        </div>
+        <div class="stack-list">
+            {% for item in data.recentes_orcamentos %}
+                <a class="stack-item" href="{{ url_for('web.orcamento_pdf', budget_id=item.id) }}">
+                    <span>
+                        <strong>{{ item.cliente_nome or "Cliente removido" }}</strong>
+                        <small>{{ item.data }} - pago {{ "%.2f"|format(item.valor_pago or 0) }} EUR</small>
+                    </span>
+                    <b>{{ "%.2f"|format(item.total) }} EUR</b>
+                </a>
+            {% else %}
+                <p class="empty compact">Ainda nao existem orcamentos.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+{% endblock %}

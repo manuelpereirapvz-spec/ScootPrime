@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Orçamentos - ScootPrime{% endblock %}
+{% block content %}
+<section class="hero compact-hero">
+    <div>
+        <p class="eyebrow">Documentos</p>
+        <h1>Orçamentos</h1>
+    </div>
+    <div class="hero-actions">
+        <a class="button secondary" href="{{ url_for('web.pesquisa') }}">Pesquisa</a>
+        <a class="button secondary" href="{{ url_for('web.ocorrencias') }}">Ocorrências</a>
+        {% if editing %}
+            <a class="button ghost" href="{{ url_for('web.orcamentos') }}">Cancelar edição</a>
+            <a class="button primary" href="#new-budget">Editar orçamento</a>
+        {% else %}
+            <a class="button primary" href="#new-budget">Novo orçamento</a>
+        {% endif %}
+    </div>
+</section>
+
+<section class="grid two-columns">
+    <article class="panel focus-panel" id="new-budget">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Cálculo automático</p>
+                <h2>{{ 'Editar orçamento' if editing else 'Novo orçamento' }}</h2>
+            </div>
+        </div>
+
+        <form class="form-stack" method="post" action="{{ url_for('web.editar_orcamento', budget_id=budget.id) if editing else url_for('web.orcamentos') }}" data-budget-form>
+            <label>Cliente
+                <select name="cliente_id" required data-autofocus>
+                    <option value="">Escolher cliente</option>
+                    {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}" {{ 'selected' if editing and cliente.id == budget['cliente_id'] else '' }}>{{ cliente.nome }} #{{ cliente.id }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Descrição do trabalho
+                <textarea name="descricao" rows="8" required placeholder="Descreva o trabalho, peças e observações para o cliente.">{{ budget['descricao'] if editing else '' }}</textarea>
+            </label>
+            <div class="split">
+                <label>Preco EUR
+                    <input name="preco" inputmode="decimal" required data-price value="{{ budget['preco'] if editing else '' }}">
+                </label>
+                <label>Valor pago EUR
+                    <input name="valor_pago" inputmode="decimal" value="{{ budget['valor_pago'] if editing else 0 }}" data-paid>
+                </label>
+            </div>
+            <label class="check">
+                <input type="checkbox" name="include_iva" {{ 'checked' if not editing or budget['include_iva'] else '' }} data-vat>
+                Incluir IVA de 23%
+            </label>
+            <div class="quote-preview" data-budget-preview>
+                <span>IVA: 0.00 EUR</span>
+                <strong>Total: 0.00 EUR</strong>
+                <small>Em aberto: 0.00 EUR</small>
+            </div>
+            <section class="material-consumption" data-material-consumption>
+                <div class="panel-heading inline-heading">
+                    <div>
+                        <p class="eyebrow">Baixa automatica</p>
+                        <h3>Descontar produtos do stock</h3>
+                    </div>
+                    <button class="button small" type="button" data-add-material>Adicionar linha</button>
+                </div>
+                <div class="material-rows" data-material-rows>
+                    {% if selected_materials %}
+                        {% for item in selected_materials %}
+                            <div class="material-row" data-material-row>
+                                <label>Produto
+                                    <select name="material_id" data-material-select>
+                                        <option value="" data-stock="">Sem desconto</option>
+                                        {% for material in materiais %}
+                                            <option value="{{ material.id }}" data-stock="{{ material.quantidade }}" {{ 'selected' if material.id == item['stock_id'] else '' }} {{ 'disabled' if material.quantidade <= 0 and material.id != item['stock_id'] else '' }}>
+                                                {{ material.nome }} - stock {{ material.quantidade }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </label>
+                                <label>Qtd.
+                                    <input name="material_qty" type="number" min="1" value="{{ item['quantidade'] }}" data-material-qty>
+                                </label>
+                                <button class="icon-button" type="button" data-remove-material>Remover</button>
+                                <small class="material-stock-hint" data-material-hint></small>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="material-row" data-material-row>
+                            <label>Produto
+                                <select name="material_id" data-material-select>
+                                    <option value="" data-stock="">Sem desconto</option>
+                                    {% for material in materiais %}
+                                        <option value="{{ material.id }}" data-stock="{{ material.quantidade }}" {{ 'disabled' if material.quantidade <= 0 else '' }}>
+                                            {{ material.nome }} - stock {{ material.quantidade }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <label>Qtd.
+                                <input name="material_qty" type="number" min="1" value="1" data-material-qty>
+                            </label>
+                            <button class="icon-button" type="button" data-remove-material>Remover</button>
+                            <small class="material-stock-hint" data-material-hint></small>
+                        </div>
+                    {% endif %}
+                </div>
+                <p class="helper-text">Opcional. Se escolher produtos aqui, o stock é descontado automaticamente quando gravar o orçamento.</p>
+            </section>
+            <button class="button primary" type="submit">Gerar orçamento</button>
+        </form>
+    </article>
+
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Consulta</p>
+                <h2>Orçamentos emitidos</h2>
+            </div>
+        </div>
+
+        <form class="search-row" method="get">
+            <select name="cliente_id">
+                <option value="">Todos os clientes</option>
+                {% for cliente in clientes %}
+                    <option value="{{ cliente.id }}" {{ 'selected' if cliente_id == cliente.id else '' }}>{{ cliente.nome }} #{{ cliente.id }}</option>
+                {% endfor %}
+            </select>
+            <button class="button" type="submit">Filtrar</button>
+            {% if cliente_id %}
+                <a class="button ghost" href="{{ url_for('web.orcamentos') }}">Limpar</a>
+            {% endif %}
+        </form>
+
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Cliente</th>
+                        <th>Total</th>
+                        <th>Pago</th>
+                        <th>Aberto</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in orcamentos %}
+                        {% set em_aberto = item.total - (item.valor_pago or 0) %}
+                        <tr data-href="{{ url_for('web.editar_orcamento', budget_id=item.id) }}">
+                            <td data-label="Data">{{ item.data }}</td>
+                            <td data-label="Cliente">
+                                <strong>{{ item.cliente_nome or ("Cliente #" ~ item.cliente_id) }}</strong>
+                                {% if consumos.get(item.id) %}
+                                    <small>
+                                        Stock:
+                                        {% for consumo in consumos.get(item.id) %}
+                                            {{ consumo.nome_material }} x{{ consumo.quantidade }}{{ ", " if not loop.last else "" }}
+                                        {% endfor %}
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td data-label="Total">{{ "%.2f"|format(item.total) }} EUR</td>
+                            <td data-label="Pago">{{ "%.2f"|format(item.valor_pago or 0) }} EUR</td>
+                            <td data-label="Aberto"><span class="{{ 'status danger' if em_aberto > 0 else 'status ok' }}">{{ "%.2f"|format(em_aberto) }} EUR</span></td>
+                            <td class="actions" data-label="Acoes">
+                                <a class="button small" href="{{ url_for('web.editar_orcamento', budget_id=item.id) }}">Editar</a>
+                                <a class="button small" href="{{ url_for('web.orcamento_pdf', budget_id=item.id) }}">PDF</a>
+                                <form method="post" action="{{ url_for('web.eliminar_orcamento', budget_id=item.id) }}" onsubmit="return confirm('Eliminar este orçamento?');">
+                                    <button class="button danger small" type="submit">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="empty">Nenhum orçamento registado.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Manutenção - ScootPrime{% endblock %}
+{% block content %}
+<section class="hero compact-hero">
+    <div>
+        <p class="eyebrow">Segurança</p>
+        <h1>Manutenção da base de dados</h1>
+    </div>
+</section>
+
+<section class="panel brand-settings">
+    <div class="panel-heading">
+        <div>
+            <p class="eyebrow">Marca</p>
+            <h2>Imagem da marca</h2>
+        </div>
+    </div>
+
+    <div class="brand-settings-grid">
+        <div class="brand-preview-box">
+            {% if brand_logo_url %}
+                <img class="brand-preview" src="{{ brand_logo_url }}" alt="Imagem da marca atual">
+            {% else %}
+                <span class="brand-empty">SP</span>
+            {% endif %}
+        </div>
+
+        <div class="brand-upload">
+            <form class="form-stack" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="brand_logo">
+                <label>Escolher imagem PNG ou JPG
+                    <input type="file" name="brand_logo" accept="image/png,image/jpeg" required>
+                </label>
+                <button class="button primary" type="submit">Guardar imagem da marca</button>
+            </form>
+
+            {% if brand_logo_url %}
+                <form method="post" onsubmit="return confirm('Remover a imagem da marca?');">
+                    <input type="hidden" name="action" value="remove_brand_logo">
+                    <button class="button subtle" type="submit">Remover imagem</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <p class="eyebrow">Dados comerciais</p>
+            <h2>Cabeçalho dos PDFs</h2>
+        </div>
+    </div>
+
+    <form class="form-stack" method="post">
+        <input type="hidden" name="action" value="store_profile">
+        <div class="split">
+            <label>Nome da loja
+                <input name="store_name" value="{{ store_profile.store_name }}" required>
+            </label>
+            <label>Subtitulo
+                <input name="store_subtitle" value="{{ store_profile.store_subtitle }}">
+            </label>
+        </div>
+        <div class="split">
+            <label>Contacto
+                <input name="store_contact" value="{{ store_profile.store_contact }}">
+            </label>
+            <label>Morada
+                <input name="store_address" value="{{ store_profile.store_address }}">
+            </label>
+        </div>
+        <button class="button primary" type="submit">Guardar dados dos PDFs</button>
+    </form>
+</section>
+
+<section class="grid two-columns">
+    <article class="panel focus-panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Cópias e reposição</p>
+                <h2>Base SQLite</h2>
+            </div>
+        </div>
+
+        <div class="maintenance-actions">
+            <form method="post">
+                <input type="hidden" name="action" value="backup">
+                <button class="button primary" type="submit">Criar cópia agora</button>
+            </form>
+
+            <form class="restore-form" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="restore">
+                <label>Restaurar cópia
+                    <input type="file" name="backup_file" accept=".db,.sqlite,.sqlite3" required>
+                </label>
+                <button class="button" type="submit" onclick="return confirm('Restaurar esta cópia vai substituir a base atual. Continuar?');">Restaurar</button>
+            </form>
+        </div>
+    </article>
+
+    <article class="panel danger-zone">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Zona sensível</p>
+                <h2>Reset total</h2>
+            </div>
+        </div>
+        <form method="post" onsubmit="return confirm('Limpar toda a base de dados? Esta ação não pode ser anulada.');">
+            <input type="hidden" name="action" value="reset">
+            <button class="button danger" type="submit">Limpar base de dados</button>
+        </form>
+    </article>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <p class="eyebrow">Histórico local</p>
+            <h2>Backups criados</h2>
+        </div>
+    </div>
+    <div class="backup-list">
+        {% for backup in backups %}
+            <div class="backup-item">
+                <span>{{ backup.name }}</span>
+                <div class="actions">
+                    <a class="button small" href="{{ url_for('web.descarregar_backup', filename=backup.name) }}">Descarregar</a>
+                    <form method="post" action="{{ url_for('web.eliminar_backup', filename=backup.name) }}" onsubmit="return confirm('Eliminar esta copia de seguranca?');">
+                        <button class="button danger small" type="submit">Eliminar</button>
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            <p class="empty compact">Ainda não existem cópias de segurança nesta instalação.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

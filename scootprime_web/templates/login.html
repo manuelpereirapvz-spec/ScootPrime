@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ "Criar acesso" if setup_mode else "Entrar" }} - ScootPrime</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="auth-page">
+    <main class="auth-shell">
+        <section class="auth-panel">
+            <div class="auth-brand">
+                {% if brand_logo_url %}
+                    <img class="brand-logo auth-logo" src="{{ brand_logo_url }}" alt="ScootPrime">
+                {% else %}
+                    <span class="brand-mark">SP</span>
+                {% endif %}
+                <div>
+                    <p class="eyebrow">ScootPrime Web</p>
+                    <h1>{{ "Criar primeiro acesso" if setup_mode else "Entrar no programa" }}</h1>
+                </div>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <section class="messages" aria-live="polite">
+                        {% for category, message in messages %}
+                            <div class="message {{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    </section>
+                {% endif %}
+            {% endwith %}
+
+            <form class="auth-card form-stack" method="post">
+                <input type="hidden" name="next" value="{{ next_url }}">
+                <label>Utilizador
+                    <input name="username" autocomplete="username" required autofocus>
+                </label>
+                <label>Password
+                    <input name="password" type="password" autocomplete="{{ 'new-password' if setup_mode else 'current-password' }}" required>
+                </label>
+                {% if setup_mode %}
+                    <label>Confirmar password
+                        <input name="confirm_password" type="password" autocomplete="new-password" required>
+                    </label>
+                {% endif %}
+                <button class="button primary" type="submit">{{ "Criar e entrar" if setup_mode else "Entrar" }}</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

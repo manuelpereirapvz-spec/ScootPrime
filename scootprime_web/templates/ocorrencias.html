@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Ocorrências - ScootPrime{% endblock %}
+{% block content %}
+<section class="hero compact-hero">
+    <div>
+        <p class="eyebrow">Assistência</p>
+        <h1>Ocorrências</h1>
+    </div>
+    <a class="button primary" href="#new-occurrence">Nova ocorrência</a>
+</section>
+
+<section class="grid two-columns">
+    <article class="panel focus-panel" id="new-occurrence">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Registo</p>
+                <h2>Nova ocorrência</h2>
+            </div>
+        </div>
+        <form class="form-stack" method="post">
+            <label>Cliente
+                <select name="cliente_id" required data-autofocus>
+                    <option value="">Escolher cliente</option>
+                    {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}">{{ cliente.nome }} #{{ cliente.id }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>Descrição da ocorrência
+                <textarea name="descricao" rows="10" required placeholder="Ex: Trotinete não liga, verificar bateria e controlador."></textarea>
+            </label>
+            <button class="button primary" type="submit">Guardar ocorrência</button>
+        </form>
+    </article>
+
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Histórico</p>
+                <h2>Ocorrências registadas</h2>
+            </div>
+        </div>
+
+        <form class="search-row" method="get">
+            <select name="cliente_id">
+                <option value="">Todos os clientes</option>
+                {% for cliente in clientes %}
+                    <option value="{{ cliente.id }}" {{ 'selected' if cliente_id == cliente.id else '' }}>{{ cliente.nome }} #{{ cliente.id }}</option>
+                {% endfor %}
+            </select>
+            <button class="button" type="submit">Filtrar</button>
+            {% if cliente_id %}
+                <a class="button ghost" href="{{ url_for('web.ocorrencias') }}">Limpar</a>
+            {% endif %}
+        </form>
+
+        <div class="stack-list roomy">
+            {% for item in ocorrencias %}
+                <article class="stack-item">
+                    <span>
+                        <strong>{{ item.cliente_nome or ("Cliente #" ~ item.cliente_id) }}</strong>
+                        <small>{{ item.data }}</small>
+                        <em>{{ item.descricao }}</em>
+                    </span>
+                    <a class="button small" href="{{ url_for('web.ocorrencia_pdf', occurrence_id=item.id) }}">PDF</a>
+                </article>
+            {% else %}
+                <p class="empty compact">Nenhuma ocorrência registada.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Clientes - ScootPrime{% endblock %}
+{% block content %}
+<section class="hero compact-hero">
+    <div>
+        <p class="eyebrow">Clientes</p>
+        <h1>Base de clientes</h1>
+    </div>
+    <a class="button primary" href="#new-client">Adicionar cliente</a>
+</section>
+
+<section class="grid two-columns">
+    <article class="panel focus-panel" id="new-client">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Registo rapido</p>
+                <h2>{{ 'Editar cliente' if editing else 'Novo cliente' }}</h2>
+            </div>
+        </div>
+        <form class="form-stack" method="post" action="{{ url_for('web.editar_cliente', client_id=client.id) if editing else url_for('web.clientes') }}">
+            <label>Nome
+                <input name="nome" required autocomplete="name" data-autofocus value="{{ client['nome'] if editing else '' }}">
+            </label>
+            <label>Morada
+                <input name="morada" autocomplete="street-address" value="{{ client['morada'] if editing else '' }}">
+            </label>
+            <label>Contacto
+                <input name="contacto" autocomplete="tel" value="{{ client['contacto'] if editing else '' }}">
+            </label>
+            <div class="form-actions">
+                <button class="button primary" type="submit">{{ 'Atualizar cliente' if editing else 'Guardar cliente' }}</button>
+                {% if editing %}
+                    <a class="button ghost" href="{{ url_for('web.clientes') }}">Cancelar</a>
+                {% endif %}
+            </div>
+        </form>
+    </article>
+
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Pesquisa automática</p>
+                <h2>Clientes registados</h2>
+            </div>
+        </div>
+
+        <form class="search-row" method="get" data-autosubmit>
+            <input name="q" value="{{ termo }}" placeholder="Nome, morada ou contacto">
+            <button class="button" type="submit">Pesquisar</button>
+            {% if termo %}
+                <a class="button ghost" href="{{ url_for('web.clientes') }}">Limpar</a>
+            {% endif %}
+        </form>
+
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Contacto</th>
+                        <th>Morada</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                        <tr data-href="{{ url_for('web.editar_cliente', client_id=cliente.id) }}">
+                            <td data-label="ID">#{{ cliente.id }}</td>
+                            <td data-label="Cliente"><strong>{{ cliente.nome }}</strong></td>
+                            <td data-label="Contacto">{{ cliente.contacto or "-" }}</td>
+                            <td data-label="Morada">{{ cliente.morada or "-" }}</td>
+                            <td class="actions" data-label="Acoes">
+                                <a class="button small" href="{{ url_for('web.editar_cliente', client_id=cliente.id) }}">Editar</a>
+                                <a class="button small" href="{{ url_for('web.pesquisa', q=cliente.nome) }}">Ficha</a>
+                                <form method="post" action="{{ url_for('web.eliminar_cliente', client_id=cliente.id) }}" onsubmit="return confirm('Eliminar este cliente e o respetivo histórico?');">
+                                    <button class="button danger small" type="submit">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="empty">Nenhum cliente registado.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Stock - ScootPrime{% endblock %}
+{% block content %}
+<section class="hero compact-hero">
+    <div>
+        <p class="eyebrow">Gestao de materiais</p>
+        <h1>Stock</h1>
+    </div>
+    <div class="hero-actions">
+        <a class="button secondary" href="{{ url_for('web.stock_pdf') }}">PDF stock existente</a>
+        <a class="button secondary" href="{{ url_for('web.stock_pdf', tipo='reposicao') }}">PDF reposicao</a>
+        <button class="button primary" type="button" data-open-dialog="product-dialog">Adicionar produto</button>
+    </div>
+</section>
+
+<section class="panel">
+    <form class="search-row wide" method="get" data-autosubmit>
+        <input name="q" value="{{ termo }}" placeholder="Pesquisar por produto, categoria ou localização">
+        <label class="check inline">
+            <input type="checkbox" name="low" value="1" {{ 'checked' if low_only else '' }}>
+            Só stock baixo
+        </label>
+        <button class="button primary" type="submit">Pesquisar</button>
+        {% if termo or low_only %}
+            <a class="button ghost" href="{{ url_for('web.stock') }}">Limpar</a>
+        {% endif %}
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <p class="eyebrow">Lista operacional</p>
+            <h2>Material registado</h2>
+        </div>
+        <div class="actions">
+            <a class="button small" href="{{ url_for('web.stock', low=1) }}">Alertas</a>
+            <a class="button small" href="{{ url_for('web.stock_pdf') }}">PDF stock</a>
+            <a class="button small" href="{{ url_for('web.stock_pdf', tipo='reposicao') }}">PDF reposicao</a>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Categoria</th>
+                    <th>Quantidade</th>
+                    <th>Mínimo</th>
+                    <th>Local</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for material in materiais %}
+                    <tr class="{{ 'warning-row' if material.stock_minimo > 0 and material.quantidade <= material.stock_minimo else '' }}">
+                        <td data-label="Produto">
+                            <strong>{{ material.nome }}</strong>
+                            {% if material.notas %}
+                                <small>{{ material.notas }}</small>
+                            {% endif %}
+                        </td>
+                        <td data-label="Categoria">{{ material.categoria or "-" }}</td>
+                        <td data-label="Quantidade">
+                            <div class="stepper">
+                                <form method="post">
+                                    <input type="hidden" name="action" value="delta">
+                                    <input type="hidden" name="material_id" value="{{ material.id }}">
+                                    <input type="hidden" name="delta" value="-1">
+                                    <button class="step-button" type="submit">-</button>
+                                </form>
+                                <strong>{{ material.quantidade }}</strong>
+                                <form method="post">
+                                    <input type="hidden" name="action" value="delta">
+                                    <input type="hidden" name="material_id" value="{{ material.id }}">
+                                    <input type="hidden" name="delta" value="1">
+                                    <button class="step-button" type="submit">+</button>
+                                </form>
+                            </div>
+                        </td>
+                        <td data-label="Minimo">{{ material.stock_minimo }}</td>
+                        <td data-label="Local">{{ material.localizacao or "-" }}</td>
+                        <td class="actions" data-label="Acoes">
+                            <form class="quantity-form" method="post">
+                                <input type="hidden" name="action" value="quantity">
+                                <input type="hidden" name="material_id" value="{{ material.id }}">
+                                <input name="quantidade" type="number" value="{{ material.quantidade }}" min="0" aria-label="Quantidade">
+                                <button class="button small" type="submit">Definir</button>
+                            </form>
+                            <form method="post" onsubmit="return confirm('Eliminar este material?');">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="material_id" value="{{ material.id }}">
+                                <button class="button danger small" type="submit">Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="empty">Nenhum material registado.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<dialog class="dialog" id="product-dialog">
+    <form class="dialog-card form-stack" method="post">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Novo material</p>
+                <h2>Adicionar produto</h2>
+            </div>
+            <button class="icon-button" type="button" data-close-dialog>Fechar</button>
+        </div>
+        <input type="hidden" name="action" value="add">
+        <label>Nome do produto
+            <input name="nome" required data-dialog-focus>
+        </label>
+        <label>Categoria
+            <input name="categoria" placeholder="Ex: Travagem">
+        </label>
+        <div class="split">
+            <label>Quantidade
+                <input name="quantidade" type="number" value="0" min="0">
+            </label>
+            <label>Stock mínimo
+                <input name="stock_minimo" type="number" value="0" min="0">
+            </label>
+        </div>
+        <label>Localização
+            <input name="localizacao" placeholder="Ex: Gaveta A2">
+        </label>
+        <label>Notas
+            <textarea name="notas" rows="4"></textarea>
+        </label>
+        <button class="button primary" type="submit">Gravar produto</button>
+    </form>
+</dialog>
+
+<span id="add-product"></span>
+{% endblock %}
