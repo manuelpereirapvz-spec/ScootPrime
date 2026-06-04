@@ -315,6 +315,30 @@ def get_user(user_id: int | None) -> sqlite3.Row | None:
     ).fetchone()
 
 
+def change_user_password(user_id: int | None, current_password: str, new_password: str) -> None:
+    if not user_id:
+        raise ValueError("Sessão inválida.")
+
+    user = get_db().execute(
+        "SELECT id, password_hash FROM utilizadores WHERE id = ?",
+        (user_id,),
+    ).fetchone()
+    if user is None:
+        raise ValueError("Utilizador não encontrado.")
+    if not check_password_hash(user["password_hash"], current_password):
+        raise ValueError("A password atual está incorreta.")
+    if len(new_password) < 6:
+        raise ValueError("A nova password deve ter pelo menos 6 caracteres.")
+    if check_password_hash(user["password_hash"], new_password):
+        raise ValueError("A nova password deve ser diferente da atual.")
+
+    get_db().execute(
+        "UPDATE utilizadores SET password_hash = ? WHERE id = ?",
+        (generate_password_hash(new_password), user_id),
+    )
+    get_db().commit()
+
+
 def list_clients(term: str = "") -> list[sqlite3.Row]:
     return get_db().execute(
         """
