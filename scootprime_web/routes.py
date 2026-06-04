@@ -448,6 +448,14 @@ def manutencao():
                     request.form.get("store_address", ""),
                 )
                 flash("Dados da loja atualizados com sucesso.", "success")
+            elif action == "change_password":
+                current_password = request.form.get("current_password", "")
+                new_password = request.form.get("new_password", "")
+                confirm_password = request.form.get("confirm_password", "")
+                if new_password != confirm_password:
+                    raise ValueError("A nova password e a confirmação não coincidem.")
+                storage.change_user_password(session.get("user_id"), current_password, new_password)
+                flash("Password atualizada com sucesso.", "success")
         except (OSError, ValueError) as exc:
             flash(str(exc), "error")
         return redirect(url_for("web.manutencao"))

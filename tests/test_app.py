@@ -33,13 +33,13 @@ class ScootPrimeWebTest(unittest.TestCase):
             storage.close_db()
         shutil.rmtree(self.root, ignore_errors=True)
 
-    def login(self):
+    def login(self, password="segredo1"):
         with self.app.app_context():
             if not storage.has_users():
                 storage.create_user("admin", "segredo1")
         return self.client.post(
             "/login",
-            data={"username": "admin", "password": "segredo1"},
+            data={"username": "admin", "password": password},
             follow_redirects=True,
         )
 
@@ -62,6 +62,49 @@ class ScootPrimeWebTest(unittest.TestCase):
             with self.assertRaises(ValueError) as exc:
                 storage.create_user("admin", "segredo2")
         self.assertIn("já existe", str(exc.exception))
+
+    def test_password_can_be_changed_from_maintenance(self):
+        self.login()
+        response = self.client.post(
+            "/manutencao",
+            data={
+                "action": "change_password",
+                "current_password": "segredo1",
+                "new_password": "nova123",
+                "confirm_password": "nova123",
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Password atualizada com sucesso.".encode(), response.data)
+
+        self.client.get("/logout")
+        response = self.login("segredo1")
+        self.assertIn("Utilizador ou password inválido.".encode(), response.data)
+
+        self.client.get("/logout")
+        response = self.login("nova123")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"Visao rapida", response.data)
+
+    def test_password_change_rejects_wrong_current_password(self):
+        self.login()
+        response = self.client.post(
+            "/manutencao",
+            data={
+                "action": "change_password",
+                "current_password": "errada",
+                "new_password": "nova123",
+                "confirm_password": "nova123",
+            },
+            follow_redirects=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("A password atual está incorreta.".encode(), response.data)
+
+        with self.app.app_context():
+            self.assertIsNotNone(storage.verify_user("admin", "segredo1"))
+            self.assertIsNone(storage.verify_user("admin", "nova123"))
 
     def test_main_pages_load(self):
         response = self.client.get("/painel")
