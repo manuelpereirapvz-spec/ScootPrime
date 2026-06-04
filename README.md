@@ -61,3 +61,11 @@ ScootPrimeWeb\instance\backups
 ```powershell
 python -m unittest discover
 ```
+
+## Servidor no portatil
+
+Se quiser correr isto num portatil como servidor com software gratuito, veja:
+
+- `SERVIDOR_PORTATIL.md`
+- `deploy/linux/scootprime.service.example`
+- `deploy/linux/nginx-scootprime.conf.example`
