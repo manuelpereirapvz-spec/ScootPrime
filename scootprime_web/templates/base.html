@@ -52,7 +52,6 @@
                     {% if current_user %}
                         <span class="user-chip">{{ current_user.username }}</span>
                     {% endif %}
-                    <a class="button subtle" href="{{ url_for('web.manutencao') }}#password-panel">Alterar password</a>
                     <a class="button subtle" href="{{ url_for('web.stock') }}#add-product">Adicionar stock</a>
                     <a class="button primary" href="{{ url_for('web.orcamentos') }}">Novo orçamento</a>
                     <a class="button subtle" href="{{ url_for('web.logout') }}">Sair</a>
