@@ -1,0 +1,17 @@
+[Unit]
+Description=ScootPrimeWeb Gunicorn service
+After=network.target
+
+[Service]
+Type=simple
+User=scootprime
+Group=scootprime
+WorkingDirectory=/opt/scootprime/app
+EnvironmentFile=/etc/scootprime.env
+RuntimeDirectory=scootprime
+ExecStart=/opt/scootprime/app/.venv/bin/gunicorn --workers 3 --bind unix:/run/scootprime/gunicorn.sock wsgi:app
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
