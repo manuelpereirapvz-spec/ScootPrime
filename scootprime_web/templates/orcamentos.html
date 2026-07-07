@@ -56,6 +56,32 @@
                 <strong>Total: 0.00 EUR</strong>
                 <small>Em aberto: 0.00 EUR</small>
             </div>
+            <label>Observações
+                <textarea name="observacoes" rows="3" maxlength="500" placeholder="Notas internas, detalhes adicionais..." data-obs-counter>{{ budget['observacoes'] if editing else '' }}</textarea>
+                <small class="char-counter" data-char-counter>500 caracteres restantes</small>
+            </label>
+            <fieldset class="acessorios-fieldset">
+                <legend>Acessórios entregues pelo cliente</legend>
+                <div class="acessorios-grid">
+                    <label class="check">
+                        <input type="checkbox" name="acessorio_carregadores" {{ 'checked' if editing and 'carregadores' in (budget['acessorios'] or '') else '' }}>
+                        Carregadores
+                    </label>
+                    <label class="check">
+                        <input type="checkbox" name="acessorio_chaves" {{ 'checked' if editing and 'chaves' in (budget['acessorios'] or '') else '' }}>
+                        Chaves
+                    </label>
+                    <label class="check">
+                        <input type="checkbox" name="acessorio_baterias" {{ 'checked' if editing and 'baterias' in (budget['acessorios'] or '') else '' }}>
+                        Baterias
+                    </label>
+                    <label class="check acessorio-outros">
+                        <input type="checkbox" name="acessorio_outros_check" {{ 'checked' if editing and 'outros:' in (budget['acessorios'] or '') else '' }}>
+                        Outros:
+                        <input type="text" name="acessorio_outros_texto" placeholder="ex: Bolsa, manual" value="{{ budget['acessorios'].split('outros:')[1].strip() if editing and 'outros:' in (budget['acessorios'] or '') else '' }}">
+                    </label>
+                </div>
+            </fieldset>
             <section class="material-consumption" data-material-consumption>
                 <div class="panel-heading inline-heading">
                     <div>
@@ -107,7 +133,11 @@
                 </div>
                 <p class="helper-text">Opcional. Se escolher produtos aqui, o stock é descontado automaticamente quando gravar o orçamento.</p>
             </section>
+            <input type="hidden" name="action" id="budget-action" value="orcamento">
             <button class="button primary" type="submit">Gerar orçamento</button>
+            {% if not editing %}
+            <button class="button" type="submit" onclick="document.getElementById('budget-action').value='reparacao'">Ordem de reparação</button>
+            {% endif %}
         </form>
     </article>
 
@@ -165,6 +195,9 @@
                             <td data-label="Aberto"><span class="{{ 'status danger' if em_aberto > 0 else 'status ok' }}">{{ "%.2f"|format(em_aberto) }} EUR</span></td>
                             <td class="actions" data-label="Acoes">
                                 <a class="button small" href="{{ url_for('web.editar_orcamento', budget_id=item.id) }}">Editar</a>
+                                <form method="post" action="{{ url_for('web.enviar_reparacao', budget_id=item.id) }}" style="display:inline;" onsubmit="return confirm('Enviar este orçamento para reparação?');">
+                                    <button class="button small primary" type="submit" title="Enviar para reparação">Reparação</button>
+                                </form>
                                 <a class="button small" href="{{ url_for('web.orcamento_pdf', budget_id=item.id) }}">PDF</a>
                                 <form method="post" action="{{ url_for('web.eliminar_orcamento', budget_id=item.id) }}" onsubmit="return confirm('Eliminar este orçamento?');">
                                     <button class="button danger small" type="submit">Eliminar</button>

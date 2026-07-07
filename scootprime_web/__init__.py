@@ -75,6 +75,7 @@ def create_app(test_config: dict | None = None) -> Flask:
                 brand_logo_url = url_for("web.brand_image")
             return {
                 "stock_low_count": storage.count_low_stock(),
+                "repair_active_count": storage.count_repair_orders_by_state().get("em_reparacao", 0),
                 "current_user": current_user,
                 "brand_logo_url": brand_logo_url,
             }

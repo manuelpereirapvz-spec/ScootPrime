@@ -137,3 +137,19 @@ document.addEventListener("click", (e) => {
         window.location.href = href;
     }
 });
+
+// Character counter for observações textarea
+document.querySelectorAll("[data-obs-counter]").forEach((textarea) => {
+    const counter = textarea.closest("label")?.querySelector("[data-char-counter]");
+    if (!counter) return;
+    const max = parseInt(textarea.getAttribute("maxlength"), 10) || 500;
+
+    const update = () => {
+        const remaining = max - textarea.value.length;
+        counter.textContent = `${remaining} caracteres restantes`;
+        counter.classList.toggle("limit", remaining < 50);
+    };
+
+    textarea.addEventListener("input", update);
+    update();
+});

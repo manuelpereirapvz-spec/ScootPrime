@@ -11,8 +11,10 @@ from . import storage
 from .pdfs import (
     budget_filename,
     build_budget_pdf,
+    build_invoice_pdf,
     build_occurrence_pdf,
     build_stock_report_pdf,
+    invoice_filename,
     occurrence_filename,
     stock_report_filename,
 )
@@ -210,19 +212,42 @@ def _parse_budget_materials() -> list[dict[str, int]]:
     return items
 
 
+def _parse_acessorios() -> str:
+    parts: list[str] = []
+    if request.form.get("acessorio_carregadores"):
+        parts.append("carregadores")
+    if request.form.get("acessorio_chaves"):
+        parts.append("chaves")
+    if request.form.get("acessorio_baterias"):
+        parts.append("baterias")
+    outros = request.form.get("acessorio_outros_texto", "").strip()
+    if request.form.get("acessorio_outros_check") and outros:
+        parts.append(f"outros: {outros}")
+    elif request.form.get("acessorio_outros_check"):
+        parts.append("outros")
+    return ", ".join(parts)
+
+
 @bp.route("/orcamentos", methods=["GET", "POST"])
 def orcamentos():
     if request.method == "POST":
         try:
-            storage.create_budget(
+            budget_id, iva, total = storage.create_budget(
                 int(request.form.get("cliente_id", "0")),
                 request.form.get("descricao", ""),
                 float(request.form.get("preco", "0").replace(",", ".")),
                 request.form.get("include_iva") == "on",
                 float((request.form.get("valor_pago", "0") or "0").replace(",", ".")),
                 _parse_budget_materials(),
+                request.form.get("observacoes", ""),
+                _parse_acessorios(),
             )
-            flash("Orçamento criado e stock atualizado.", "success")
+            action = request.form.get("action", "orcamento")
+            if action == "reparacao":
+                storage.send_budget_to_repair(budget_id)
+                flash(f"Orçamento #{budget_id} criado e enviado para reparação.", "success")
+            else:
+                flash("Orçamento criado e stock atualizado.", "success")
         except (TypeError, ValueError) as exc:
             flash(str(exc), "error")
         return redirect(url_for("web.orcamentos"))
@@ -255,6 +280,8 @@ def editar_orcamento(budget_id: int):
                 request.form.get("include_iva") == "on",
                 float((request.form.get("valor_pago", "0") or "0").replace(",", ".")),
                 _parse_budget_materials(),
+                request.form.get("observacoes", ""),
+                _parse_acessorios(),
             )
             flash("Orçamento atualizado com sucesso.", "success")
             return redirect(url_for("web.orcamentos"))
@@ -305,6 +332,112 @@ def orcamento_pdf(budget_id: int):
         mimetype="application/pdf",
         as_attachment=True,
         download_name=budget_filename(budget),
+    )
+
+
+@bp.post("/orcamentos/<int:budget_id>/enviar-reparacao")
+def enviar_reparacao(budget_id: int):
+    try:
+        order_id = storage.send_budget_to_repair(budget_id)
+        flash(f"Orçamento enviado para reparação (Ordem #{order_id}).", "success")
+    except (TypeError, ValueError) as exc:
+        flash(str(exc), "error")
+    return redirect(url_for("web.orcamentos"))
+
+
+# ---------------------------------------------------------------------------
+# Ordens de Reparação
+# ---------------------------------------------------------------------------
+
+@bp.route("/reparacoes", methods=["GET"])
+def reparacoes():
+    client_id = request.args.get("cliente_id", type=int)
+    estado = request.args.get("estado", "")
+    orders = storage.list_repair_orders(client_id, estado or None)
+    clients = storage.list_clients()
+    summary = storage.repair_orders_summary()
+    return render_template(
+        "reparacoes.html",
+        ordens=orders,
+        clientes=clients,
+        cliente_id=client_id,
+        estado=estado,
+        summary=summary,
+        state_labels=storage.REPAIR_STATE_LABELS,
+    )
+
+
+@bp.get("/reparacoes/<int:order_id>")
+def reparacao_detalhe(order_id: int):
+    order = storage.get_repair_order(order_id)
+    if not order:
+        flash("Ordem de reparação não encontrada.", "error")
+        return redirect(url_for("web.reparacoes"))
+    materiais = storage.list_order_materials(order_id)
+    cliente = {
+        "id": order["cliente_id"],
+        "nome": order["cliente_nome"],
+        "morada": order["cliente_morada"],
+        "contacto": order["cliente_contacto"],
+    }
+    return render_template(
+        "reparacao_detalhe.html",
+        order=order,
+        cliente=cliente,
+        materiais=materiais,
+        state_labels=storage.REPAIR_STATE_LABELS,
+    )
+
+
+@bp.post("/reparacoes/<int:order_id>/retroceder")
+def retroceder_orcamento(order_id: int):
+    try:
+        budget_id = storage.revert_order_to_budget(order_id)
+        flash(f"Ordem devolvida ao orçamento (Orçamento #{budget_id}).", "success")
+    except (TypeError, ValueError) as exc:
+        flash(str(exc), "error")
+    return redirect(url_for("web.reparacoes"))
+
+
+@bp.post("/reparacoes/<int:order_id>/estado")
+def atualizar_estado_reparacao(order_id: int):
+    try:
+        estado = request.form.get("estado", "")
+        valor_final = request.form.get("valor_final")
+        valor_pago = request.form.get("valor_pago")
+        vf = float(valor_final.replace(",", ".")) if valor_final else None
+        vp = float(valor_pago.replace(",", ".")) if valor_pago else None
+        storage.update_repair_order_status(order_id, estado, vf, vp)
+        flash("Estado da ordem atualizado.", "success")
+    except (TypeError, ValueError) as exc:
+        flash(str(exc), "error")
+    return redirect(url_for("web.reparacoes"))
+
+
+@bp.get("/reparacoes/<int:order_id>/fatura")
+def fatura_pdf(order_id: int):
+    order = storage.get_repair_order(order_id)
+    if not order:
+        flash("Ordem de reparação não encontrada.", "error")
+        return redirect(url_for("web.reparacoes"))
+    cliente = {
+        "nome": order["cliente_nome"],
+        "morada": order["cliente_morada"],
+        "contacto": order["cliente_contacto"],
+    }
+    materiais = storage.list_order_materials(order_id)
+    pdf_bytes = build_invoice_pdf(
+        cliente,
+        order,
+        materiais,
+        storage.get_brand_logo(),
+        storage.get_store_profile(),
+    )
+    return send_file(
+        BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=invoice_filename(order),
     )
 
 

@@ -26,8 +26,9 @@
                 <a class="{{ 'active' if endpoint == 'web.dashboard' else '' }}" href="{{ url_for('web.dashboard') }}" data-short="Painel">Painel</a>
                 <a class="{{ 'active' if endpoint == 'web.clientes' else '' }}" href="{{ url_for('web.clientes') }}" data-short="Clientes">Clientes</a>
                 <a class="{{ 'active' if endpoint == 'web.orcamentos' else '' }}" href="{{ url_for('web.orcamentos') }}" data-short="Docs">Orçamentos</a>
+                <a class="{{ 'active' if endpoint == 'web.reparacoes' else '' }}" href="{{ url_for('web.reparacoes') }}" data-short="Reparar">Reparações{% if repair_active_count %}<span>{{ repair_active_count }}</span>{% endif %}</a>
                 <a class="{{ 'active' if endpoint == 'web.stock' else '' }}" href="{{ url_for('web.stock') }}" data-short="Stock">Stock{% if stock_low_count %}<span>{{ stock_low_count }}</span>{% endif %}</a>
-                <a class="{{ 'active' if endpoint == 'web.manutencao' else '' }}" href="{{ url_for('web.manutencao') }}" data-short="Mais">Manutenção</a>
+                <a class="{{ 'active' if endpoint == 'web.manutencao' else '' }}" href="{{ url_for('web.manutencao') }}" data-short="Config">Manutenção</a>
             </nav>
 
             <div class="sidebar-card">

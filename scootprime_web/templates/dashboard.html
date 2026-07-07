@@ -31,6 +31,16 @@
         <strong>{{ data.summary["stock_baixo"] }}</strong>
         <small>Artigos a repor</small>
     </article>
+    <article class="metric-card">
+        <span>Em Reparacao</span>
+        <strong>{{ data.reparacoes_summary.por_estado.get('em_reparacao', 0) }}</strong>
+        <small>Ordens ativas</small>
+    </article>
+    <article class="metric-card">
+        <span>Reparacoes</span>
+        <strong>{{ data.reparacoes_summary.total }}</strong>
+        <small>Total de ordens</small>
+    </article>
 </section>
 
 <section class="grid dashboard-grid">
@@ -115,6 +125,35 @@
                 </a>
             {% else %}
                 <p class="empty compact">Ainda nao existem orcamentos.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Reparacoes</p>
+                <h2>Ordens recentes</h2>
+            </div>
+            <a class="button small" href="{{ url_for('web.reparacoes') }}">Ver todas</a>
+        </div>
+        <div class="stack-list">
+            {% for item in data.recentes_reparacoes %}
+                <a class="stack-item" href="{{ url_for('web.fatura_pdf', order_id=item.id) }}">
+                    <span>
+                        <strong>{{ item.cliente_nome or "Cliente removido" }}</strong>
+                        <small>{{ item.data }}
+                            {% if item.estado == 'em_reparacao' %}
+                                - <span class="status warning">Em Reparação</span>
+                            {% elif item.estado == 'paga' %}
+                                - <span class="status paid">Paga</span>
+                            {% endif %}
+                        </small>
+                    </span>
+                    <b>{{ "%.2f"|format(item.total) }} EUR</b>
+                </a>
+            {% else %}
+                <p class="empty compact">Ainda nao existem ordens de reparacao.</p>
             {% endfor %}
         </div>
     </article>

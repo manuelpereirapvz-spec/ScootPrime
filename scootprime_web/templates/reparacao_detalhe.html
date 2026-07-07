@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Ordem #{{ order.id }} - ScootPrime{% endblock %}
+{% block content %}
+<section class="hero compact-hero">
+    <div>
+        <p class="eyebrow">Reparações</p>
+        <h1>Ordem #{{ order.id }}</h1>
+    </div>
+    <div class="hero-actions">
+        <a class="button secondary" href="{{ url_for('web.reparacoes') }}">← Voltar à lista</a>
+        {% if order.estado == 'paga' %}
+            <a class="button primary" href="{{ url_for('web.fatura_pdf', order_id=order.id) }}">Fatura PDF</a>
+        {% endif %}
+    </div>
+</section>
+
+<section class="grid two-columns">
+    <article class="panel focus-panel">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Detalhes da ordem</p>
+                <h2>Ordem de Reparação #{{ order.id }}</h2>
+            </div>
+            <div>
+                {% if order.estado == 'em_reparacao' %}
+                    <span class="status warning">Em Reparação</span>
+                {% elif order.estado == 'paga' %}
+                    <span class="status paid">Paga</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="detail-grid">
+            <div class="detail-card">
+                <h3>Cliente</h3>
+                <p><strong>{{ cliente.nome }}</strong></p>
+                {% if cliente.morada %}<p>{{ cliente.morada }}</p>{% endif %}
+                {% if cliente.contacto %}<p>{{ cliente.contacto }}</p>{% endif %}
+            </div>
+            <div class="detail-card">
+                <h3>Documento</h3>
+                <p><strong>Ordem:</strong> #{{ order.id }}</p>
+                <p><strong>Data:</strong> {{ order.data }}</p>
+                <p><strong>Orçamento origem:</strong> #{{ order.orcamento_id }}</p>
+            </div>
+        </div>
+
+        <div class="detail-section">
+            <h3>Descrição do trabalho</h3>
+            <div class="detail-box">{{ order.descricao }}</div>
+        </div>
+
+        {% if order.observacoes %}
+        <div class="detail-section">
+            <h3>Observações</h3>
+            <div class="detail-box">{{ order.observacoes }}</div>
+        </div>
+        {% endif %}
+
+        {% if order.acessorios %}
+        <div class="detail-section">
+            <h3>Acessórios entregues</h3>
+            <div class="acessorios-list">
+                {% for item in order.acessorios.split(',') %}
+                    <span class="acessorio-tag">{{ item.strip() }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if materiais %}
+        <div class="detail-section">
+            <h3>Materiais utilizados</h3>
+            <div class="table-card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Quantidade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mat in materiais %}
+                        <tr>
+                            <td>{{ mat.nome_material }}</td>
+                            <td>{{ mat.quantidade }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="detail-section">
+            <h3>Valores</h3>
+            <div class="finance-strip">
+                <div>
+                    <span>Subtotal</span>
+                    <strong>{{ "%.2f"|format(order.preco) }} EUR</strong>
+                </div>
+                <div>
+                    <span>IVA</span>
+                    <strong>{{ "%.2f"|format(order.iva) }} EUR</strong>
+                </div>
+                <div>
+                    <span>Total</span>
+                    <strong>{{ "%.2f"|format(order.valor_final or order.total) }} EUR</strong>
+                </div>
+            </div>
+            <div class="finance-strip" style="margin-top: 0.7rem;">
+                <div>
+                    <span>Pago</span>
+                    <strong>{{ "%.2f"|format(order.valor_pago or 0) }} EUR</strong>
+                </div>
+                <div>
+                    <span>Em aberto</span>
+                    {% set em_aberto = (order.valor_final or order.total) - (order.valor_pago or 0) %}
+                    <strong class="{{ 'text-danger' if em_aberto > 0 else 'text-ok' }}">{{ "%.2f"|format(em_aberto) }} EUR</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="detail-actions">
+            {% if order.estado == 'em_reparacao' %}
+                <form method="post" action="{{ url_for('web.atualizar_estado_reparacao', order_id=order.id) }}" style="display:inline;">
+                    <input type="hidden" name="estado" value="paga">
+                    <button class="button primary" type="submit">Pagar</button>
+                </form>
+                <form method="post" action="{{ url_for('web.retroceder_orcamento', order_id=order.id) }}" style="display:inline;" onsubmit="return confirm('Devolver esta ordem ao orçamento?');">
+                    <button class="button danger" type="submit">Retroceder para orçamento</button>
+                </form>
+            {% elif order.estado == 'paga' %}
+                <a class="button primary" href="{{ url_for('web.fatura_pdf', order_id=order.id) }}">Gerar Fatura PDF</a>
+            {% endif %}
+        </div>
+    </article>
+</section>
+{% endblock %}

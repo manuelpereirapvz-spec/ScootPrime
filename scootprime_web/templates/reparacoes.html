@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Ordens de Reparação - ScootPrime{% endblock %}
+{% block content %}
+<section class="hero compact-hero">
+    <div>
+        <p class="eyebrow">Reparações</p>
+        <h1>Ordens de Reparação</h1>
+    </div>
+    <div class="hero-actions">
+        <a class="button secondary" href="{{ url_for('web.orcamentos') }}">Orçamentos</a>
+        <a class="button secondary" href="{{ url_for('web.pesquisa') }}">Pesquisa</a>
+    </div>
+</section>
+
+<section class="metric-grid">
+    <article class="metric-card">
+        <span>Em Reparação</span>
+        <strong>{{ summary.por_estado.get('em_reparacao', 0) }}</strong>
+    </article>
+    <article class="metric-card">
+        <span>Pagas</span>
+        <strong>{{ summary.por_estado.get('paga', 0) }}</strong>
+    </article>
+    <article class="metric-card alert-card">
+        <span>Total Faturado</span>
+        <strong>{{ "%.2f"|format(summary.total_faturado) }} EUR</strong>
+    </article>
+</section>
+
+<section class="grid two-columns">
+    <article class="panel" style="grid-column: 1 / -1;">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">Consulta</p>
+                <h2>Ordens registadas</h2>
+            </div>
+        </div>
+
+        <form class="search-row" method="get">
+            <select name="cliente_id">
+                <option value="">Todos os clientes</option>
+                {% for cliente in clientes %}
+                    <option value="{{ cliente.id }}" {{ 'selected' if cliente_id == cliente.id else '' }}>{{ cliente.nome }} #{{ cliente.id }}</option>
+                {% endfor %}
+            </select>
+            <select name="estado">
+                <option value="">Todos os estados</option>
+                {% for key, label in state_labels.items() %}
+                    <option value="{{ key }}" {{ 'selected' if estado == key else '' }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button class="button" type="submit">Filtrar</button>
+            {% if cliente_id or estado %}
+                <a class="button ghost" href="{{ url_for('web.reparacoes') }}">Limpar</a>
+            {% endif %}
+        </form>
+
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ordem</th>
+                        <th>Data</th>
+                        <th>Cliente</th>
+                        <th>Estado</th>
+                        <th>Total</th>
+                        <th>Pago</th>
+                        <th>Aberto</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in ordens %}
+                        {% set em_aberto = (item.valor_final or item.total) - (item.valor_pago or 0) %}
+                        <tr data-href="{{ url_for('web.reparacao_detalhe', order_id=item.id) }}">
+                            <td data-label="Ordem"><strong>#{{ item.id }}</strong></td>
+                            <td data-label="Data">{{ item.data }}</td>
+                            <td data-label="Cliente">
+                                <strong>{{ item.cliente_nome or ("Cliente #" ~ item.cliente_id) }}</strong>
+                            </td>
+                            <td data-label="Estado">
+                                {% if item.estado == 'em_reparacao' %}
+                                    <span class="status warning">Em Reparação</span>
+                                {% elif item.estado == 'paga' %}
+                                    <span class="status paid">Paga</span>
+                                {% endif %}
+                            </td>
+                            <td data-label="Total">{{ "%.2f"|format(item.valor_final or item.total) }} EUR</td>
+                            <td data-label="Pago">{{ "%.2f"|format(item.valor_pago or 0) }} EUR</td>
+                            <td data-label="Aberto"><span class="{{ 'status danger' if em_aberto > 0 else 'status ok' }}">{{ "%.2f"|format(em_aberto) }} EUR</span></td>
+                            <td class="actions" data-label="Ações">
+                                {% if item.estado == 'em_reparacao' %}
+                                    <form method="post" action="{{ url_for('web.atualizar_estado_reparacao', order_id=item.id) }}" style="display:inline;">
+                                        <input type="hidden" name="estado" value="paga">
+                                        <button class="button small primary" type="submit" title="Registar pagamento e concluir">Pagar</button>
+                                    </form>
+                                    <form method="post" action="{{ url_for('web.retroceder_orcamento', order_id=item.id) }}" style="display:inline;" onsubmit="return confirm('Devolver esta ordem ao orçamento?');">
+                                        <button class="button small danger" type="submit" title="Devolver ao orçamento">Retroceder</button>
+                                    </form>
+                                {% elif item.estado == 'paga' %}
+                                    <a class="button small" href="{{ url_for('web.fatura_pdf', order_id=item.id) }}" title="Gerar fatura PDF">Fatura</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="empty">Nenhuma ordem de reparação registada.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
+{% endblock %}

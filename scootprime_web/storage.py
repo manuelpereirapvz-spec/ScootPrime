@@ -108,6 +108,37 @@ def init_db() -> None:
             dados BLOB NOT NULL,
             atualizado_em TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS ordens_reparacao (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            orcamento_id INTEGER NOT NULL,
+            cliente_id INTEGER NOT NULL,
+            data TEXT NOT NULL,
+            descricao TEXT NOT NULL,
+            preco REAL NOT NULL,
+            iva REAL NOT NULL,
+            total REAL NOT NULL,
+            include_iva INTEGER DEFAULT 1,
+            valor_pago REAL DEFAULT 0.0,
+            valor_final REAL DEFAULT 0.0,
+            estado TEXT NOT NULL DEFAULT 'em_reparacao',
+            data_estado TEXT NOT NULL,
+            FOREIGN KEY(orcamento_id) REFERENCES orcamentos(id),
+            FOREIGN KEY(cliente_id) REFERENCES clientes(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS ordem_materiais (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ordem_id INTEGER NOT NULL,
+            stock_id INTEGER,
+            nome_material TEXT NOT NULL,
+            quantidade INTEGER NOT NULL,
+            stock_antes INTEGER NOT NULL,
+            stock_depois INTEGER NOT NULL,
+            data TEXT NOT NULL,
+            FOREIGN KEY(ordem_id) REFERENCES ordens_reparacao(id),
+            FOREIGN KEY(stock_id) REFERENCES stock(id)
+        );
         """
     )
 
@@ -116,6 +147,16 @@ def init_db() -> None:
         db.execute("ALTER TABLE orcamentos ADD COLUMN include_iva INTEGER DEFAULT 1")
     if "valor_pago" not in columns:
         db.execute("ALTER TABLE orcamentos ADD COLUMN valor_pago REAL DEFAULT 0.0")
+    if "observacoes" not in columns:
+        db.execute("ALTER TABLE orcamentos ADD COLUMN observacoes TEXT DEFAULT ''")
+    if "acessorios" not in columns:
+        db.execute("ALTER TABLE orcamentos ADD COLUMN acessorios TEXT DEFAULT ''")
+
+    rep_columns = {row["name"] for row in db.execute("PRAGMA table_info(ordens_reparacao)").fetchall()}
+    if rep_columns and "observacoes" not in rep_columns:
+        db.execute("ALTER TABLE ordens_reparacao ADD COLUMN observacoes TEXT DEFAULT ''")
+    if rep_columns and "acessorios" not in rep_columns:
+        db.execute("ALTER TABLE ordens_reparacao ADD COLUMN acessorios TEXT DEFAULT ''")
     db.commit()
 
 
@@ -366,6 +407,10 @@ def delete_client(client_id: int) -> None:
         _restore_budget_stock(db, budget_id)
         db.execute("DELETE FROM orcamento_materiais WHERE orcamento_id = ?", (budget_id,))
     db.execute("DELETE FROM orcamentos WHERE cliente_id = ?", (client_id,))
+    order_ids = [row["id"] for row in db.execute("SELECT id FROM ordens_reparacao WHERE cliente_id = ?", (client_id,)).fetchall()]
+    for order_id in order_ids:
+        db.execute("DELETE FROM ordem_materiais WHERE ordem_id = ?", (order_id,))
+    db.execute("DELETE FROM ordens_reparacao WHERE cliente_id = ?", (client_id,))
     db.execute("DELETE FROM clientes WHERE id = ?", (client_id,))
     db.commit()
 
@@ -432,6 +477,8 @@ def create_budget(
     include_iva: bool = True,
     valor_pago: float = 0.0,
     material_items: list[dict[str, int]] | None = None,
+    observacoes: str = "",
+    acessorios: str = "",
 ) -> tuple[int, float, float]:
     db = get_db()
     if not get_client(client_id):
@@ -462,8 +509,8 @@ def create_budget(
     try:
         cur = db.execute(
             """
-            INSERT INTO orcamentos (cliente_id, data, descricao, preco, iva, total, include_iva, valor_pago)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO orcamentos (cliente_id, data, descricao, preco, iva, total, include_iva, valor_pago, observacoes, acessorios)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 client_id,
@@ -474,6 +521,8 @@ def create_budget(
                 total,
                 1 if include_iva else 0,
                 valor_pago,
+                observacoes.strip(),
+                acessorios.strip(),
             ),
         )
         budget_id = int(cur.lastrowid)
@@ -510,6 +559,8 @@ def update_budget(
     include_iva: bool,
     valor_pago: float,
     material_items: list[dict[str, int]],
+    observacoes: str = "",
+    acessorios: str = "",
 ) -> tuple[int, float, float]:
     if client_id <= 0:
         raise ValueError("Selecione um cliente.")
@@ -548,7 +599,7 @@ def update_budget(
         db.execute(
             """
             UPDATE orcamentos
-            SET cliente_id = ?, descricao = ?, preco = ?, iva = ?, total = ?, include_iva = ?, valor_pago = ?, data = ?
+            SET cliente_id = ?, descricao = ?, preco = ?, iva = ?, total = ?, include_iva = ?, valor_pago = ?, data = ?, observacoes = ?, acessorios = ?
             WHERE id = ?
             """,
             (
@@ -560,6 +611,8 @@ def update_budget(
                 1 if include_iva else 0,
                 valor_pago,
                 datetime.now().strftime("%d/%m/%Y"),
+                observacoes.strip(),
+                acessorios.strip(),
                 budget_id,
             ),
         )
@@ -801,11 +854,23 @@ def dashboard_data() -> dict[str, Any]:
         LIMIT 5
         """
     ).fetchall()
+    recentes_reparacoes = db.execute(
+        """
+        SELECT r.id, r.data, r.estado, r.total, r.valor_pago, c.nome AS cliente_nome
+        FROM ordens_reparacao r
+        LEFT JOIN clientes c ON c.id = r.cliente_id
+        ORDER BY r.id DESC
+        LIMIT 5
+        """
+    ).fetchall()
+    reparacoes_summary = repair_orders_summary()
     return {
         "summary": summary,
         "stock_baixo": list_stock("", True)[:5],
         "recentes_ocorrencias": recentes_ocorrencias,
         "recentes_orcamentos": recentes_orcamentos,
+        "recentes_reparacoes": recentes_reparacoes,
+        "reparacoes_summary": reparacoes_summary,
     }
 
 
@@ -827,3 +892,234 @@ def restore_backup(source: Path) -> None:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source, db_path)
     init_db()
+
+
+# ---------------------------------------------------------------------------
+# Ordens de Reparação
+# ---------------------------------------------------------------------------
+
+REPAIR_STATES = ("em_reparacao", "paga")
+REPAIR_STATE_LABELS = {
+    "em_reparacao": "Em Reparação",
+    "paga": "Paga",
+}
+
+
+def send_budget_to_repair(budget_id: int) -> int:
+    """Move um orçamento para ordens de reparação. Retorna o ID da nova ordem."""
+    db = get_db()
+    budget = get_budget(budget_id)
+    if not budget:
+        raise ValueError("Orçamento não encontrado.")
+
+    materials = list_budget_materials(budget_id)
+    now = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+    cur = db.execute(
+        """
+        INSERT INTO ordens_reparacao
+            (orcamento_id, cliente_id, data, descricao, preco, iva, total, include_iva, valor_pago, valor_final, estado, data_estado, observacoes, acessorios)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            budget_id,
+            int(budget["cliente_id"]),
+            now,
+            budget["descricao"],
+            float(budget["preco"]),
+            float(budget["iva"]),
+            float(budget["total"]),
+            int(budget["include_iva"]),
+            float(budget["valor_pago"] or 0),
+            float(budget["total"]),
+            "em_reparacao",
+            now,
+            budget["observacoes"] or "",
+            budget["acessorios"] or "",
+        ),
+    )
+    order_id = int(cur.lastrowid)
+
+    for mat in materials:
+        db.execute(
+            """
+            INSERT INTO ordem_materiais
+                (ordem_id, stock_id, nome_material, quantidade, stock_antes, stock_depois, data)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                order_id,
+                int(mat["stock_id"]) if mat["stock_id"] else None,
+                mat["nome_material"],
+                int(mat["quantidade"]),
+                int(mat["stock_antes"]),
+                int(mat["stock_depois"]),
+                mat["data"],
+            ),
+        )
+
+    db.execute("DELETE FROM orcamento_materiais WHERE orcamento_id = ?", (budget_id,))
+    db.execute("DELETE FROM orcamentos WHERE id = ?", (budget_id,))
+    db.commit()
+    return order_id
+
+
+def revert_order_to_budget(order_id: int) -> int:
+    """Devolve uma ordem de reparação para orçamento. Retorna o ID do novo orçamento."""
+    db = get_db()
+    order = get_repair_order(order_id)
+    if not order:
+        raise ValueError("Ordem de reparação não encontrada.")
+
+    materials = list_order_materials(order_id)
+    now = datetime.now().strftime("%d/%m/%Y")
+
+    cur = db.execute(
+        """
+        INSERT INTO orcamentos
+            (cliente_id, data, descricao, preco, iva, total, include_iva, valor_pago, observacoes, acessorios)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            int(order["cliente_id"]),
+            now,
+            order["descricao"],
+            float(order["preco"]),
+            float(order["iva"]),
+            float(order["total"]),
+            int(order["include_iva"]),
+            float(order["valor_pago"] or 0),
+            order["observacoes"] or "",
+            order["acessorios"] or "",
+        ),
+    )
+    budget_id = int(cur.lastrowid)
+
+    for mat in materials:
+        db.execute(
+            """
+            INSERT INTO orcamento_materiais
+                (orcamento_id, stock_id, nome_material, quantidade, stock_antes, stock_depois, data)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                budget_id,
+                int(mat["stock_id"]) if mat["stock_id"] else None,
+                mat["nome_material"],
+                int(mat["quantidade"]),
+                int(mat["stock_antes"]),
+                int(mat["stock_depois"]),
+                mat["data"],
+            ),
+        )
+
+    db.execute("DELETE FROM ordem_materiais WHERE ordem_id = ?", (order_id,))
+    db.execute("DELETE FROM ordens_reparacao WHERE id = ?", (order_id,))
+    db.commit()
+    return budget_id
+
+
+def list_repair_orders(client_id: int | None = None, estado: str | None = None) -> list[sqlite3.Row]:
+    conditions: list[str] = []
+    params: list[Any] = []
+    if client_id:
+        conditions.append("r.cliente_id = ?")
+        params.append(client_id)
+    if estado:
+        conditions.append("r.estado = ?")
+        params.append(estado)
+    where = "WHERE " + " AND ".join(conditions) if conditions else ""
+    return get_db().execute(
+        f"""
+        SELECT r.*, c.nome AS cliente_nome
+        FROM ordens_reparacao r
+        LEFT JOIN clientes c ON c.id = r.cliente_id
+        {where}
+        ORDER BY r.id DESC
+        """,
+        tuple(params),
+    ).fetchall()
+
+
+def get_repair_order(order_id: int) -> sqlite3.Row | None:
+    return get_db().execute(
+        """
+        SELECT r.*, c.nome AS cliente_nome, c.morada AS cliente_morada, c.contacto AS cliente_contacto
+        FROM ordens_reparacao r
+        LEFT JOIN clientes c ON c.id = r.cliente_id
+        WHERE r.id = ?
+        """,
+        (order_id,),
+    ).fetchone()
+
+
+def list_order_materials(order_id: int) -> list[sqlite3.Row]:
+    return get_db().execute(
+        """
+        SELECT id, ordem_id, stock_id, nome_material, quantidade, stock_antes, stock_depois, data
+        FROM ordem_materiais
+        WHERE ordem_id = ?
+        ORDER BY id
+        """,
+        (order_id,),
+    ).fetchall()
+
+
+def update_repair_order_status(order_id: int, estado: str, valor_final: float | None = None, valor_pago: float | None = None) -> None:
+    if estado not in REPAIR_STATES:
+        raise ValueError("Estado inválido.")
+    db = get_db()
+    order = get_repair_order(order_id)
+    if not order:
+        raise ValueError("Ordem de reparação não encontrada.")
+    now = datetime.now().strftime("%d/%m/%Y %H:%M")
+    vf = float(valor_final) if valor_final is not None else float(order["valor_final"] or order["total"])
+    existing_paid = float(order["valor_pago"] or 0)
+
+    if estado == "paga":
+        # Ao pagar, assume-se que o cliente paga o valor em aberto
+        vp = vf
+    elif valor_pago is not None:
+        # O valor recebido no formulário é SOMADO ao que já foi pago
+        vp = existing_paid + float(valor_pago)
+    else:
+        vp = existing_paid
+
+    if vp < 0 or vf < 0:
+        raise ValueError("Os valores não podem ser negativos.")
+    db.execute(
+        "UPDATE ordens_reparacao SET estado = ?, valor_final = ?, valor_pago = ?, data_estado = ? WHERE id = ?",
+        (estado, vf, vp, now, order_id),
+    )
+    db.commit()
+
+
+def count_repair_orders_by_state() -> dict[str, int]:
+    rows = get_db().execute(
+        "SELECT estado, COUNT(*) AS cnt FROM ordens_reparacao GROUP BY estado"
+    ).fetchall()
+    result: dict[str, int] = {s: 0 for s in REPAIR_STATES}
+    for row in rows:
+        result[row["estado"]] = int(row["cnt"])
+    return result
+
+
+def repair_orders_summary() -> dict[str, Any]:
+    db = get_db()
+    row = db.execute(
+        """
+        SELECT
+            COUNT(*) AS total,
+            COALESCE(SUM(valor_final), 0) AS total_faturado,
+            COALESCE(SUM(valor_pago), 0) AS total_pago,
+            COALESCE(SUM(valor_final - COALESCE(valor_pago, 0)), 0) AS total_em_aberto
+        FROM ordens_reparacao
+        """
+    ).fetchone()
+    return {
+        "total": int(row["total"]),
+        "total_faturado": float(row["total_faturado"]),
+        "total_pago": float(row["total_pago"]),
+        "total_em_aberto": float(row["total_em_aberto"]),
+        "por_estado": count_repair_orders_by_state(),
+    }
