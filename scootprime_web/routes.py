@@ -13,9 +13,11 @@ from .pdfs import (
     build_budget_pdf,
     build_invoice_pdf,
     build_occurrence_pdf,
+    build_repair_order_pdf,
     build_stock_report_pdf,
     invoice_filename,
     occurrence_filename,
+    repair_order_filename,
     stock_report_filename,
 )
 
@@ -412,6 +414,34 @@ def atualizar_estado_reparacao(order_id: int):
     except (TypeError, ValueError) as exc:
         flash(str(exc), "error")
     return redirect(url_for("web.reparacoes"))
+
+
+@bp.get("/reparacoes/<int:order_id>/pdf")
+def reparacao_pdf(order_id: int):
+    order = storage.get_repair_order(order_id)
+    if not order:
+        flash("Ordem de reparação não encontrada.", "error")
+        return redirect(url_for("web.reparacoes"))
+    cliente = {
+        "id": order["cliente_id"],
+        "nome": order["cliente_nome"],
+        "morada": order["cliente_morada"],
+        "contacto": order["cliente_contacto"],
+    }
+    materiais = storage.list_order_materials(order_id)
+    pdf_bytes = build_repair_order_pdf(
+        cliente,
+        order,
+        materiais,
+        storage.get_brand_logo(),
+        storage.get_store_profile(),
+    )
+    return send_file(
+        BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=repair_order_filename(order),
+    )
 
 
 @bp.get("/reparacoes/<int:order_id>/fatura")

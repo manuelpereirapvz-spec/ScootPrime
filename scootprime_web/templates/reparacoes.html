@@ -32,7 +32,7 @@
         <div class="panel-heading">
             <div>
                 <p class="eyebrow">Consulta</p>
-                <h2>Ordens registadas</h2>
+                <h2>Ordens Registadas</h2>
             </div>
         </div>
 
@@ -89,6 +89,7 @@
                             <td data-label="Pago">{{ "%.2f"|format(item.valor_pago or 0) }} EUR</td>
                             <td data-label="Aberto"><span class="{{ 'status danger' if em_aberto > 0 else 'status ok' }}">{{ "%.2f"|format(em_aberto) }} EUR</span></td>
                             <td class="actions" data-label="Ações">
+                                <a class="button small" href="{{ url_for('web.reparacao_pdf', order_id=item.id) }}" title="Ordem de reparação PDF">PDF</a>
                                 {% if item.estado == 'em_reparacao' %}
                                     <form method="post" action="{{ url_for('web.atualizar_estado_reparacao', order_id=item.id) }}" style="display:inline;">
                                         <input type="hidden" name="estado" value="paga">

@@ -4,7 +4,7 @@
 <section class="hero compact-hero">
     <div>
         <p class="eyebrow">Pesquisa global</p>
-        <h1>Encontrar informação</h1>
+        <h1>Encontrar Informação</h1>
     </div>
 </section>
 
@@ -66,7 +66,7 @@
                     <b class="{{ 'status danger' if item.stock_minimo > 0 and item.quantidade <= item.stock_minimo else 'status ok' }}">{{ item.quantidade }}</b>
                 </a>
             {% else %}
-                <p class="empty compact">{{ "Sem materiais encontrados." if termo else "A pesquisa tambem encontra materiais." }}</p>
+                <p class="empty compact">{{ "Sem materiais encontrados." if termo else "A pesquisa também encontra materiais." }}</p>
             {% endfor %}
         </div>
     </article>

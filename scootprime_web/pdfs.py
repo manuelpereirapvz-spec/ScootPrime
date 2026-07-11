@@ -27,12 +27,12 @@ BADGE_BG = colors.HexColor("#E8F5EE")
 # Company defaults
 # ---------------------------------------------------------------------------
 COMPANY_NAME = "ScootPrime"
-COMPANY_SUBTITLE = "Servico de Reparacao"
+COMPANY_SUBTITLE = "Serviço de Reparação"
 COMPANY_CONTACT = "Filipe - 937320683"
 COMPANY_ADDRESS = ""
-VALIDITY_NOTE = "Este orcamento e valido por 30 dias. Obrigado pela preferencia."
-OCCURRENCE_NOTE = "Documento de registo de ocorrencia gerado pelo ScootPrime."
-INVOICE_NOTE = "Fatura emitida pelo ScootPrime. Obrigado pela preferencia."
+VALIDITY_NOTE = "Este orçamento é válido por 30 dias. Obrigado pela preferência."
+OCCURRENCE_NOTE = "Documento de registo de ocorrência gerado pelo ScootPrime."
+INVOICE_NOTE = "Fatura emitida pelo ScootPrime. Obrigado pela preferência."
 
 
 # ---------------------------------------------------------------------------
@@ -175,8 +175,14 @@ def _draw_header(c, width, height, brand_logo=None, profile=None, document_title
     c.setFillColor(PRIMARY)
     c.roundRect(badge_x, badge_y, badge_w, 22 * mm, 5 * mm, fill=True, stroke=False)
     c.setFillColor(WHITE)
-    c.setFont("Helvetica-Bold", 13)
-    c.drawCentredString(badge_x + badge_w / 2, badge_y + 8 * mm, document_title[:14])
+    if "\n" in document_title:
+        lines = document_title.split("\n")
+        c.setFont("Helvetica-Bold", 10)
+        c.drawCentredString(badge_x + badge_w / 2, badge_y + 10 * mm, lines[0][:10])
+        c.drawCentredString(badge_x + badge_w / 2, badge_y + 3 * mm, lines[1][:10])
+    else:
+        c.setFont("Helvetica-Bold", 13)
+        c.drawCentredString(badge_x + badge_w / 2, badge_y + 8 * mm, document_title[:14])
 
 
 def _draw_footer(c, width, profile=None, note=""):
@@ -524,12 +530,96 @@ def build_budget_pdf(cliente, budget, materiais=None, brand_logo_path=None, stor
 
 
 # ---------------------------------------------------------------------------
+# Repair Order (Ordem de Reparação) PDF
+# ---------------------------------------------------------------------------
+def _draw_repair_order_meta(c, cliente, order, width, y):
+    left_x = 18 * mm
+    right_x = 124 * mm
+    card_h = 34 * mm
+
+    c.setFillColor(WHITE)
+    c.setStrokeColor(LINE)
+    c.roundRect(left_x, y - card_h, 98 * mm, card_h, 4 * mm, fill=True, stroke=True)
+    c.roundRect(right_x, y - card_h, width - right_x - 18 * mm, card_h, 4 * mm, fill=True, stroke=True)
+
+    c.setFont("Helvetica-Bold", 9)
+    c.setFillColor(PRIMARY)
+    c.drawString(left_x + 5 * mm, y - 7 * mm, "Cliente")
+    _draw_label_value(c, "Nome:", cliente["nome"], left_x + 5 * mm, y - 15 * mm, 19 * mm)
+    _draw_label_value(c, "Morada:", cliente["morada"] or "-", left_x + 5 * mm, y - 22 * mm, 19 * mm)
+    _draw_label_value(c, "Contacto:", cliente["contacto"] or "-", left_x + 5 * mm, y - 29 * mm, 19 * mm)
+
+    c.setFont("Helvetica-Bold", 9)
+    c.setFillColor(PRIMARY)
+    c.drawString(right_x + 5 * mm, y - 7 * mm, "Dados da ordem")
+    _draw_label_value(c, "Numero:", repair_order_reference(order), right_x + 5 * mm, y - 15 * mm, 24 * mm)
+    _draw_label_value(c, "Data:", order["data"], right_x + 5 * mm, y - 22 * mm, 24 * mm)
+    _draw_label_value(c, "Orcamento:", f"ORC-{order['orcamento_id']}", right_x + 5 * mm, y - 29 * mm, 24 * mm)
+    return y - card_h - 7 * mm
+
+
+def build_repair_order_pdf(cliente, order, materiais=None, brand_logo_path=None, store_profile=None) -> bytes:
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    c.setTitle(repair_order_reference(order))
+    c.setAuthor(_profile_value(store_profile, "store_name", COMPANY_NAME))
+    c.setSubject("Ordem de reparacao")
+
+    _draw_header(c, width, height, brand_logo_path, store_profile, "ORDEM\nREPARAÇÃO")
+    y = height - 44 * mm
+    y = _draw_repair_order_meta(c, cliente, order, width, y)
+    y = _draw_description(c, order["descricao"], width, y)
+    y = _draw_observacoes(c, _safe_text(order, "observacoes"), width, y)
+    y = _draw_acessorios_badges(c, _safe_text(order, "acessorios", ""), width, y)
+
+    items = [("Servico de reparacao", "1", _money(order["preco"]))]
+    items.extend((m["nome_material"], str(m["quantidade"]), "Incluido") for m in (materiais or [])[:8])
+    y = _draw_items_table(c, items, width, y, "Itens da ordem")
+
+    total = float(order["total"] or 0)
+    paid = float(order["valor_pago"] or 0)
+    open_amount = max(0, total - paid)
+    totrows = [
+        ("Subtotal", _money(order["preco"]), False),
+        ("IVA (23%)", _money(order["iva"]), False),
+        ("Total", _money(total), True),
+    ]
+    if paid:
+        totrows.append(("Valor pago", _money(paid), False))
+        totrows.append(("Por liquidar", _money(open_amount), True))
+    _draw_totals(c, totrows, width, y)
+
+    # Signature area
+    sig_y = 42 * mm
+    c.setStrokeColor(LINE)
+    c.setLineWidth(0.5)
+    c.line(18 * mm, sig_y, 140 * mm, sig_y)
+    c.setFont("Helvetica", 8)
+    c.setFillColor(MUTED)
+    c.drawString(18 * mm, sig_y - 5 * mm, "Assinatura do cliente")
+
+    _draw_footer(c, width, store_profile, "Ordem de reparacao gerada pelo ScootPrime.")
+    c.save()
+    return buffer.getvalue()
+
+
+# ---------------------------------------------------------------------------
 # Invoice (Fatura) PDF
 # ---------------------------------------------------------------------------
 INVOICE_STATE_LABELS = {
     "em_reparacao": "Em Reparacao",
     "paga": "Paga",
 }
+
+
+def repair_order_reference(order) -> str:
+    return f"OR-{order['id']}-{_budget_date_token(order['data'])}"
+
+
+def repair_order_filename(order) -> str:
+    return f"OR_{order['id']}_{_budget_date_token(order['data'])}.pdf"
 
 
 def invoice_reference(order) -> str:

@@ -40,7 +40,7 @@
                 <textarea name="descricao" rows="8" required placeholder="Descreva o trabalho, peças e observações para o cliente.">{{ budget['descricao'] if editing else '' }}</textarea>
             </label>
             <div class="split">
-                <label>Preco EUR
+                <label>Preço EUR
                     <input name="preco" inputmode="decimal" required data-price value="{{ budget['preco'] if editing else '' }}">
                 </label>
                 <label>Valor pago EUR
@@ -85,7 +85,7 @@
             <section class="material-consumption" data-material-consumption>
                 <div class="panel-heading inline-heading">
                     <div>
-                        <p class="eyebrow">Baixa automatica</p>
+                        <p class="eyebrow">Baixa automática</p>
                         <h3>Descontar produtos do stock</h3>
                     </div>
                     <button class="button small" type="button" data-add-material>Adicionar linha</button>
@@ -131,7 +131,7 @@
                         </div>
                     {% endif %}
                 </div>
-                <p class="helper-text">Opcional. Se escolher produtos aqui, o stock é descontado automaticamente quando gravar o orçamento.</p>
+                <p class="helper-text">Opcional. Se escolher produtos aqui, o stock é descontado automaticamente ao gravar o orçamento.</p>
             </section>
             <input type="hidden" name="action" id="budget-action" value="orcamento">
             <button class="button primary" type="submit">Gerar orçamento</button>
@@ -145,7 +145,7 @@
         <div class="panel-heading">
             <div>
                 <p class="eyebrow">Consulta</p>
-                <h2>Orçamentos emitidos</h2>
+                <h2>Orçamentos Emitidos</h2>
             </div>
         </div>
 
@@ -193,7 +193,7 @@
                             <td data-label="Total">{{ "%.2f"|format(item.total) }} EUR</td>
                             <td data-label="Pago">{{ "%.2f"|format(item.valor_pago or 0) }} EUR</td>
                             <td data-label="Aberto"><span class="{{ 'status danger' if em_aberto > 0 else 'status ok' }}">{{ "%.2f"|format(em_aberto) }} EUR</span></td>
-                            <td class="actions" data-label="Acoes">
+                            <td class="actions" data-label="Ações">
                                 <a class="button small" href="{{ url_for('web.editar_orcamento', budget_id=item.id) }}">Editar</a>
                                 <form method="post" action="{{ url_for('web.enviar_reparacao', budget_id=item.id) }}" style="display:inline;" onsubmit="return confirm('Enviar este orçamento para reparação?');">
                                     <button class="button small primary" type="submit" title="Enviar para reparação">Reparação</button>

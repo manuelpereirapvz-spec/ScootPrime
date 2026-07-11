@@ -4,7 +4,7 @@
 <section class="hero">
     <div>
         <p class="eyebrow">Painel de controlo</p>
-        <h1>Visao rapida da oficina</h1>
+        <h1>Visão Rápida da Oficina</h1>
     </div>
     <div class="hero-actions">
         <a class="button primary" href="{{ url_for('web.clientes') }}">Novo cliente</a>
@@ -18,13 +18,13 @@
         <strong>{{ data.summary["clientes"] }}</strong>
     </article>
     <article class="metric-card">
-        <span>Ocorrencias</span>
+        <span>Ocorrências</span>
         <strong>{{ data.summary["ocorrencias"] }}</strong>
     </article>
     <article class="metric-card">
-        <span>Orcamentado</span>
+        <span>Orçamentado</span>
         <strong>{{ "%.2f"|format(data.summary["total_orcamentado"]) }} EUR</strong>
-        <small>Soma dos orcamentos emitidos</small>
+        <small>Soma dos orçamentos emitidos</small>
     </article>
     <article class="metric-card alert-card">
         <span>Stock baixo</span>
@@ -32,12 +32,12 @@
         <small>Artigos a repor</small>
     </article>
     <article class="metric-card">
-        <span>Em Reparacao</span>
+        <span>Em Reparação</span>
         <strong>{{ data.reparacoes_summary.por_estado.get('em_reparacao', 0) }}</strong>
         <small>Ordens ativas</small>
     </article>
     <article class="metric-card">
-        <span>Reparacoes</span>
+        <span>Reparações</span>
         <strong>{{ data.reparacoes_summary.total }}</strong>
         <small>Total de ordens</small>
     </article>
@@ -47,8 +47,8 @@
     <article class="panel attention-panel">
         <div class="panel-heading">
             <div>
-                <p class="eyebrow">Atencao</p>
-                <h2>Reposicao de stock</h2>
+                <p class="eyebrow">Atenção</p>
+                <h2>Reposição de Stock</h2>
             </div>
             <a class="button small" href="{{ url_for('web.stock', low=1) }}">Ver tudo</a>
         </div>
@@ -57,7 +57,7 @@
                 <a class="stack-item" href="{{ url_for('web.stock', q=item.nome) }}">
                     <span>
                         <strong>{{ item.nome }}</strong>
-                        <small>{{ item.categoria or "Sem categoria" }} - minimo {{ item.stock_minimo }}</small>
+                        <small>{{ item.categoria or "Sem categoria" }} - mínimo {{ item.stock_minimo }}</small>
                     </span>
                     <b>{{ item.quantidade }}</b>
                 </a>
@@ -89,8 +89,8 @@
     <article class="panel">
         <div class="panel-heading">
             <div>
-                <p class="eyebrow">Ultimo movimento</p>
-                <h2>Ocorrencias recentes</h2>
+                <p class="eyebrow">Último movimento</p>
+                <h2>Ocorrências Recentes</h2>
             </div>
         </div>
         <div class="stack-list">
@@ -102,7 +102,7 @@
                     </span>
                 </div>
             {% else %}
-                <p class="empty compact">Ainda nao existem ocorrencias.</p>
+                <p class="empty compact">Ainda não existem ocorrências.</p>
             {% endfor %}
         </div>
     </article>
@@ -111,7 +111,7 @@
         <div class="panel-heading">
             <div>
                 <p class="eyebrow">Documentos</p>
-                <h2>Orcamentos recentes</h2>
+                <h2>Orçamentos Recentes</h2>
             </div>
         </div>
         <div class="stack-list">
@@ -124,7 +124,7 @@
                     <b>{{ "%.2f"|format(item.total) }} EUR</b>
                 </a>
             {% else %}
-                <p class="empty compact">Ainda nao existem orcamentos.</p>
+                <p class="empty compact">Ainda não existem orçamentos.</p>
             {% endfor %}
         </div>
     </article>
@@ -132,8 +132,8 @@
     <article class="panel">
         <div class="panel-heading">
             <div>
-                <p class="eyebrow">Reparacoes</p>
-                <h2>Ordens recentes</h2>
+                <p class="eyebrow">Reparações</p>
+                <h2>Ordens Recentes</h2>
             </div>
             <a class="button small" href="{{ url_for('web.reparacoes') }}">Ver todas</a>
         </div>
@@ -153,7 +153,7 @@
                     <b>{{ "%.2f"|format(item.total) }} EUR</b>
                 </a>
             {% else %}
-                <p class="empty compact">Ainda nao existem ordens de reparacao.</p>
+                <p class="empty compact">Ainda não existem ordens de reparação.</p>
             {% endfor %}
         </div>
     </article>

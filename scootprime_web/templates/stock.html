@@ -3,12 +3,12 @@
 {% block content %}
 <section class="hero compact-hero">
     <div>
-        <p class="eyebrow">Gestao de materiais</p>
+        <p class="eyebrow">Gestão de materiais</p>
         <h1>Stock</h1>
     </div>
     <div class="hero-actions">
         <a class="button secondary" href="{{ url_for('web.stock_pdf') }}">PDF stock existente</a>
-        <a class="button secondary" href="{{ url_for('web.stock_pdf', tipo='reposicao') }}">PDF reposicao</a>
+        <a class="button secondary" href="{{ url_for('web.stock_pdf', tipo='reposicao') }}">PDF reposição</a>
         <button class="button primary" type="button" data-open-dialog="product-dialog">Adicionar produto</button>
     </div>
 </section>
@@ -31,12 +31,12 @@
     <div class="panel-heading">
         <div>
             <p class="eyebrow">Lista operacional</p>
-            <h2>Material registado</h2>
+            <h2>Material Registado</h2>
         </div>
         <div class="actions">
             <a class="button small" href="{{ url_for('web.stock', low=1) }}">Alertas</a>
             <a class="button small" href="{{ url_for('web.stock_pdf') }}">PDF stock</a>
-            <a class="button small" href="{{ url_for('web.stock_pdf', tipo='reposicao') }}">PDF reposicao</a>
+            <a class="button small" href="{{ url_for('web.stock_pdf', tipo='reposicao') }}">PDF reposição</a>
         </div>
     </div>
 
@@ -79,9 +79,9 @@
                                 </form>
                             </div>
                         </td>
-                        <td data-label="Minimo">{{ material.stock_minimo }}</td>
+                        <td data-label="Mínimo">{{ material.stock_minimo }}</td>
                         <td data-label="Local">{{ material.localizacao or "-" }}</td>
-                        <td class="actions" data-label="Acoes">
+                        <td class="actions" data-label="Ações">
                             <form class="quantity-form" method="post">
                                 <input type="hidden" name="action" value="quantity">
                                 <input type="hidden" name="material_id" value="{{ material.id }}">

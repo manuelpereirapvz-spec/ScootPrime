@@ -4,7 +4,7 @@
 <section class="hero compact-hero">
     <div>
         <p class="eyebrow">Segurança</p>
-        <h1>Manutenção da base de dados</h1>
+        <h1>Manutenção da Base de Dados</h1>
     </div>
 </section>
 
@@ -12,7 +12,7 @@
     <div class="panel-heading">
         <div>
             <p class="eyebrow">Marca</p>
-            <h2>Imagem da marca</h2>
+            <h2>Imagem da Marca</h2>
         </div>
     </div>
 
@@ -58,7 +58,7 @@
             <label>Nome da loja
                 <input name="store_name" value="{{ store_profile.store_name }}" required>
             </label>
-            <label>Subtitulo
+            <label>Subtítulo
                 <input name="store_subtitle" value="{{ store_profile.store_subtitle }}">
             </label>
         </div>
@@ -78,7 +78,7 @@
     <div class="panel-heading">
         <div>
             <p class="eyebrow">Acesso</p>
-            <h2>Alterar password</h2>
+            <h2>Alterar Password</h2>
         </div>
     </div>
 
@@ -128,7 +128,7 @@
         <div class="panel-heading">
             <div>
                 <p class="eyebrow">Zona sensível</p>
-                <h2>Reset total</h2>
+                <h2>Reset Total</h2>
             </div>
         </div>
         <form method="post" onsubmit="return confirm('Limpar toda a base de dados? Esta ação não pode ser anulada.');">
@@ -142,7 +142,7 @@
     <div class="panel-heading">
         <div>
             <p class="eyebrow">Histórico local</p>
-            <h2>Backups criados</h2>
+            <h2>Backups Criados</h2>
         </div>
     </div>
     <div class="backup-list">
@@ -151,7 +151,7 @@
                 <span>{{ backup.name }}</span>
                 <div class="actions">
                     <a class="button small" href="{{ url_for('web.descarregar_backup', filename=backup.name) }}">Descarregar</a>
-                    <form method="post" action="{{ url_for('web.eliminar_backup', filename=backup.name) }}" onsubmit="return confirm('Eliminar esta copia de seguranca?');">
+                    <form method="post" action="{{ url_for('web.eliminar_backup', filename=backup.name) }}" onsubmit="return confirm('Eliminar esta cópia de segurança?');">
                         <button class="button danger small" type="submit">Eliminar</button>
                     </form>
                 </div>
