@@ -145,8 +145,8 @@
                         <small>{{ item.data }}
                             {% if item.estado == 'em_reparacao' %}
                                 - <span class="status warning">Em Reparação</span>
-                            {% elif item.estado == 'paga' %}
-                                - <span class="status paid">Paga</span>
+                            {% elif item.estado == 'concluido' %}
+                                - <span class="status paid">Concluído</span>
                             {% endif %}
                         </small>
                     </span>

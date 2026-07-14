@@ -609,8 +609,8 @@ def build_repair_order_pdf(cliente, order, materiais=None, brand_logo_path=None,
 # Invoice (Fatura) PDF
 # ---------------------------------------------------------------------------
 INVOICE_STATE_LABELS = {
-    "em_reparacao": "Em Reparacao",
-    "paga": "Paga",
+    "em_reparacao": "Em Reparação",
+    "concluido": "Concluído",
 }
 
 
@@ -689,7 +689,7 @@ def _draw_paid_watermark(c, width, height):
     c.setFont("Helvetica-Bold", 72)
     c.translate(width / 2, height / 2)
     c.rotate(35)
-    c.drawCentredString(0, 0, "PAGA")
+    c.drawCentredString(0, 0, "CONCLUÍDO")
     c.restoreState()
 
 
@@ -703,7 +703,7 @@ def build_invoice_pdf(cliente, order, materiais=None, brand_logo_path=None, stor
     c.setSubject("Fatura de reparacao")
 
     # Watermark if paid
-    if order["estado"] == "paga":
+    if order["estado"] == "concluido":
         _draw_paid_watermark(c, width, height)
 
     _draw_header(c, width, height, brand_logo_path, store_profile, "FATURA")

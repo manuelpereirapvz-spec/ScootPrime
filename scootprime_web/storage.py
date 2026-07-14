@@ -898,10 +898,10 @@ def restore_backup(source: Path) -> None:
 # Ordens de Reparação
 # ---------------------------------------------------------------------------
 
-REPAIR_STATES = ("em_reparacao", "paga")
+REPAIR_STATES = ("em_reparacao", "concluido")
 REPAIR_STATE_LABELS = {
     "em_reparacao": "Em Reparação",
-    "paga": "Paga",
+    "concluido": "Concluído",
 }
 
 
@@ -1076,8 +1076,8 @@ def update_repair_order_status(order_id: int, estado: str, valor_final: float | 
     vf = float(valor_final) if valor_final is not None else float(order["valor_final"] or order["total"])
     existing_paid = float(order["valor_pago"] or 0)
 
-    if estado == "paga":
-        # Ao pagar, assume-se que o cliente paga o valor em aberto
+    if estado == "concluido":
+        # Ao concluir, assume-se que o cliente paga o valor em aberto
         vp = vf
     elif valor_pago is not None:
         # O valor recebido no formulário é SOMADO ao que já foi pago

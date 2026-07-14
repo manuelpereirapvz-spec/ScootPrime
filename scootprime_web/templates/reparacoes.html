@@ -18,8 +18,8 @@
         <strong>{{ summary.por_estado.get('em_reparacao', 0) }}</strong>
     </article>
     <article class="metric-card">
-        <span>Pagas</span>
-        <strong>{{ summary.por_estado.get('paga', 0) }}</strong>
+        <span>Concluídas</span>
+        <strong>{{ summary.por_estado.get('concluido', 0) }}</strong>
     </article>
     <article class="metric-card alert-card">
         <span>Total Faturado</span>
@@ -81,8 +81,8 @@
                             <td data-label="Estado">
                                 {% if item.estado == 'em_reparacao' %}
                                     <span class="status warning">Em Reparação</span>
-                                {% elif item.estado == 'paga' %}
-                                    <span class="status paid">Paga</span>
+                                {% elif item.estado == 'concluido' %}
+                                    <span class="status paid">Concluído</span>
                                 {% endif %}
                             </td>
                             <td data-label="Total">{{ "%.2f"|format(item.valor_final or item.total) }} EUR</td>
@@ -92,13 +92,13 @@
                                 <a class="button small" href="{{ url_for('web.reparacao_pdf', order_id=item.id) }}" title="Ordem de reparação PDF">PDF</a>
                                 {% if item.estado == 'em_reparacao' %}
                                     <form method="post" action="{{ url_for('web.atualizar_estado_reparacao', order_id=item.id) }}" style="display:inline;">
-                                        <input type="hidden" name="estado" value="paga">
+                                        <input type="hidden" name="estado" value="concluido">
                                         <button class="button small primary" type="submit" title="Registar pagamento e concluir">Pagar</button>
                                     </form>
                                     <form method="post" action="{{ url_for('web.retroceder_orcamento', order_id=item.id) }}" style="display:inline;" onsubmit="return confirm('Devolver esta ordem ao orçamento?');">
                                         <button class="button small danger" type="submit" title="Devolver ao orçamento">Retroceder</button>
                                     </form>
-                                {% elif item.estado == 'paga' %}
+                                {% elif item.estado == 'concluido' %}
                                     <a class="button small" href="{{ url_for('web.fatura_pdf', order_id=item.id) }}" title="Gerar fatura PDF">Fatura</a>
                                 {% endif %}
                             </td>
