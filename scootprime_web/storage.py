@@ -157,6 +157,7 @@ def init_db() -> None:
         db.execute("ALTER TABLE ordens_reparacao ADD COLUMN observacoes TEXT DEFAULT ''")
     if rep_columns and "acessorios" not in rep_columns:
         db.execute("ALTER TABLE ordens_reparacao ADD COLUMN acessorios TEXT DEFAULT ''")
+    db.execute("UPDATE ordens_reparacao SET estado = 'concluido' WHERE estado = 'paga'")
     db.commit()
 
 

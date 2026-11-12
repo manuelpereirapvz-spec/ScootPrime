@@ -116,6 +116,23 @@ class ScootPrimeWebTest(unittest.TestCase):
                 response = self.client.get(path)
                 self.assertEqual(response.status_code, 200)
 
+    def test_legacy_paid_repair_can_generate_invoice(self):
+        self.login()
+        with self.app.app_context():
+            client_id = storage.add_client("Cliente Reparacao Antiga")
+            budget_id = storage.create_budget(client_id, "Reparacao antiga", 50.0, True, 0.0, [])[0]
+            order_id = storage.send_budget_to_repair(budget_id)
+            db = storage.get_db()
+            db.execute("UPDATE ordens_reparacao SET estado = 'paga' WHERE id = ?", (order_id,))
+            db.commit()
+            storage.init_db()
+            self.assertEqual(storage.get_repair_order(order_id)["estado"], "concluido")
+
+        response = self.client.get(f"/reparacoes/{order_id}/fatura")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Content-Type"], "application/pdf")
+        response.close()
+
     def test_brand_logo_upload_and_serving(self):
         self.login()
         png = (
