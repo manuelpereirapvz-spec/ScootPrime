@@ -133,6 +133,27 @@ class ScootPrimeWebTest(unittest.TestCase):
         self.assertEqual(response.headers["Content-Type"], "application/pdf")
         response.close()
 
+    def test_invoice_is_available_before_repair_is_completed(self):
+        self.login()
+        with self.app.app_context():
+            client_id = storage.add_client("Cliente Reparacao em Curso")
+            budget_id = storage.create_budget(client_id, "Reparacao em curso", 50.0, True, 0.0, [])[0]
+            order_id = storage.send_budget_to_repair(budget_id)
+
+        response = self.client.get(f"/reparacoes/{order_id}")
+        self.assertIn(b"Fatura PDF", response.data)
+        self.assertIn(b"Terminar", response.data)
+        self.assertNotIn(b">Pagar<", response.data)
+
+        response = self.client.get(f"/reparacoes/{order_id}/fatura")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Content-Type"], "application/pdf")
+        response.close()
+
+        response = self.client.get("/reparacoes")
+        self.assertIn(b"title=\"Gerar fatura PDF\"", response.data)
+        self.assertIn(b">Terminar</button>", response.data)
+
     def test_brand_logo_upload_and_serving(self):
         self.login()
         png = (

@@ -8,9 +8,7 @@
     </div>
     <div class="hero-actions">
         <a class="button secondary" href="{{ url_for('web.reparacoes') }}">← Voltar à lista</a>
-        {% if order.estado == 'concluido' %}
-            <a class="button primary" href="{{ url_for('web.fatura_pdf', order_id=order.id) }}">Fatura PDF</a>
-        {% endif %}
+        <a class="button primary" href="{{ url_for('web.fatura_pdf', order_id=order.id) }}">Fatura PDF</a>
     </div>
 </section>
 
@@ -121,20 +119,18 @@
             </div>
         </div>
 
+        {% if order.estado == 'em_reparacao' %}
         <div class="detail-actions">
             <a class="button" href="{{ url_for('web.reparacao_pdf', order_id=order.id) }}">PDF</a>
-            {% if order.estado == 'em_reparacao' %}
-                <form method="post" action="{{ url_for('web.atualizar_estado_reparacao', order_id=order.id) }}" style="display:inline;">
-                    <input type="hidden" name="estado" value="concluido">
-                    <button class="button primary" type="submit">Pagar</button>
-                </form>
-                <form method="post" action="{{ url_for('web.retroceder_orcamento', order_id=order.id) }}" style="display:inline;" onsubmit="return confirm('Devolver esta ordem ao orçamento?');">
-                    <button class="button danger" type="submit">Retroceder para orçamento</button>
-                </form>
-            {% elif order.estado == 'concluido' %}
-                <a class="button primary" href="{{ url_for('web.fatura_pdf', order_id=order.id) }}">Gerar Fatura PDF</a>
-            {% endif %}
+            <form method="post" action="{{ url_for('web.atualizar_estado_reparacao', order_id=order.id) }}" style="display:inline;">
+                <input type="hidden" name="estado" value="concluido">
+                <button class="button primary" type="submit">Terminar</button>
+            </form>
+            <form method="post" action="{{ url_for('web.retroceder_orcamento', order_id=order.id) }}" style="display:inline;" onsubmit="return confirm('Devolver esta ordem ao orçamento?');">
+                <button class="button danger" type="submit">Retroceder para orçamento</button>
+            </form>
         </div>
+        {% endif %}
     </article>
 </section>
 {% endblock %}

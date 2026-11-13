@@ -90,16 +90,15 @@
                             <td data-label="Aberto"><span class="{{ 'status danger' if em_aberto > 0 else 'status ok' }}">{{ "%.2f"|format(em_aberto) }} EUR</span></td>
                             <td class="actions" data-label="Ações">
                                 <a class="button small" href="{{ url_for('web.reparacao_pdf', order_id=item.id) }}" title="Ordem de reparação PDF">PDF</a>
+                                <a class="button small" href="{{ url_for('web.fatura_pdf', order_id=item.id) }}" title="Gerar fatura PDF">Fatura</a>
                                 {% if item.estado == 'em_reparacao' %}
-                                    <form method="post" action="{{ url_for('web.atualizar_estado_reparacao', order_id=item.id) }}" style="display:inline;">
+                                    <form method="post" action="{{ url_for('web.atualizar_estado_reparacao', order_id=item.id) }}" style="display:inline;" title="Terminar reparação">
                                         <input type="hidden" name="estado" value="concluido">
-                                        <button class="button small primary" type="submit" title="Registar pagamento e concluir">Pagar</button>
+                                        <button class="button small primary" type="submit">Terminar</button>
                                     </form>
                                     <form method="post" action="{{ url_for('web.retroceder_orcamento', order_id=item.id) }}" style="display:inline;" onsubmit="return confirm('Devolver esta ordem ao orçamento?');">
                                         <button class="button small danger" type="submit" title="Devolver ao orçamento">Retroceder</button>
                                     </form>
-                                {% elif item.estado == 'concluido' %}
-                                    <a class="button small" href="{{ url_for('web.fatura_pdf', order_id=item.id) }}" title="Gerar fatura PDF">Fatura</a>
                                 {% endif %}
                             </td>
                         </tr>
